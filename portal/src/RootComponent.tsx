@@ -15,29 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
-import { Component, Injectable, OAuth2Service } from "acfrontend";
+import { Component, Injectable } from "acfrontend";
+import { AuthService } from "./AuthService";
 
 @Injectable
 export class RootComponent extends Component
 {
-    constructor(private oAuth2Service: OAuth2Service)
+    constructor(private authService: AuthService)
     {
         super();
     }
 
     protected Render()
     {
-        return "TODO";
+        return "TODO: Root component";
     }
 
     //Event handlers
     override OnInitiated(): void
     {
-        this.oAuth2Service.PerformRedirectLogin({
-            authorizeEndpoint: process.env.OPENOBJECTSTORAGE_AUTH_ENDPOINT!,
-            clientId: process.env.OPENOBJECTSTORAGE_CLIENTID!,
-            redirectURI: process.env.OPENOBJECTSTORAGE_REDIRECTURI!,
-            scopes: []
-        });
+        this.authService.HandleLoginFlow();
     }
 }

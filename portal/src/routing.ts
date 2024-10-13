@@ -19,4 +19,6 @@
 import { Routes } from "acfrontend";
 
 export const routes : Routes = [
+    { path: "oauth2", component: "oauth2 needed?" },
+    { path: "", component: "HELLO WORLD" }
 ];
