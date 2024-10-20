@@ -1,3 +1,8 @@
-portal/.env
+portal/dist
 portal/node_modules
+portal/.env
 portal/package-lock.json
+service/dist
+service/node_modules
+service/.env
+service/package-lock.json

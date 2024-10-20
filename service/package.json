@@ -1,0 +1,23 @@
+{
+  "name": "oos-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "run-dev-server": "nodemon --exec \"npx acts-util-apilib; tsc; node dist/src/main.js\""
+  },
+  "keywords": [],
+  "author": "Amir Czwink",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "nodemon": "^3.1.7",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "acts-util-apilib": "*",
+    "acts-util-core": "*",
+    "acts-util-node": "*",
+    "dotenv": "^16.4.5",
+    "ftp-srv": "^4.6.3"
+  }
+}

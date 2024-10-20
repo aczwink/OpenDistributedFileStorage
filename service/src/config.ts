@@ -16,9 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { Routes } from "acfrontend";
+export const CONFIG_DB = {
+    host: process.env.OPENOBJECTSTORAGE_DBHOST!,
+    user: process.env.OPENOBJECTSTORAGE_DBUSER!,
+    password: process.env.OPENOBJECTSTORAGE_DBPW!,
+};
 
-export const routes : Routes = [
-    { path: "oauth2", component: "oauth2 needed?" },
-    { path: "", component: "HELLO WORLD" }
-];
+export const CONFIG_OIDP_ENDPOINT = process.env.OPENOBJECTSTORAGE_OIDP_ENDPOINT!;
+export const CONFIG_ORIGIN = process.env.OPENOBJECTSTORAGE_ORIGIN!;
+export const CONFIG_PORT = process.env.OPENOBJECTSTORAGE_PORT;
