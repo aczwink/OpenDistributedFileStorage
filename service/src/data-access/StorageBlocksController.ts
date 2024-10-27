@@ -27,6 +27,15 @@ export class StorageBlocksController
     }
 
     //Public methods
+    public async AddBlockLocation(storageBlockId: number, storageBackendId: number)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        await conn.InsertRow("storagebackends_storageblocks", {
+            storageBackendId,
+            storageBlockId
+        });
+    }
+
     public async CreateBlock()
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
@@ -50,6 +59,23 @@ export class StorageBlocksController
         return storageBlockId;
     }
 
+    public async FindFastBackendIdThatHasBlock(storageBlockId: number)
+    {
+        const query = `
+        SELECT sbsb.storageBackendId
+        FROM storagebackends_storageblocks sbsb
+        INNER JOIN storagebackends sb
+            ON sb.id = sbsb.storageBackendId
+        WHERE sbsb.storageBlockId = ?
+        ORDER BY sb.storageTier ASC
+        LIMIT 1;
+        `;
+
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const row = await conn.SelectOne(query, storageBlockId);
+        return row?.storageBackendId as number | undefined;
+    }
+
     public async FindResidualBlock(size: number)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
@@ -62,6 +88,13 @@ export class StorageBlocksController
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         const row = await conn.SelectOne("SELECT TRUE FROM storageblocks_residual WHERE storageBlockId = ?", storageBlockId);
         return row !== undefined;
+    }
+
+    public async QueryBlockLocations(storageBlockId: number)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const rows = await conn.Select("SELECT storageBackendId FROM storagebackends_storageblocks WHERE storageBlockId = ?", storageBlockId);
+        return rows.map(x => x.storageBackendId as number);
     }
 
     public async QueryEncryptionInfo(storageBlockId: number)
@@ -85,6 +118,16 @@ export class StorageBlocksController
             await conn.DeleteRows("storageblocks_residual", "storageBlockId = ?", storageBlockId);
         else
             await conn.UpdateRows("storageblocks_residual", { leftSize: newLeftSize }, "storageBlockId = ?", storageBlockId);
+    }
+
+    public async UpdateBlockLocation(storageBlockId: number, storageBackendId: number)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        await conn.DeleteRows("storagebackends_storageblocks", "storageBlockId = ?", storageBlockId);
+        await conn.InsertRow("storagebackends_storageblocks", {
+            storageBackendId,
+            storageBlockId
+        });
     }
 
     public async UpdateEncryptionInfo(storageBlockId: number, iv: Buffer, authTag: Buffer)

@@ -28,7 +28,6 @@ export interface FileOverviewData
 
 export interface FileMetaData extends FileOverviewData
 {
-    blobId: number;
     containerId: number;
 }
 
@@ -40,7 +39,7 @@ interface FileRevision
 
 @Injectable
 export class FilesController
-{    
+{
     constructor(private dbConnMgr: DBConnectionsManager)
     {
     }

@@ -20,24 +20,69 @@ import { StorageBackend } from "../storage-backends/StorageBackend";
 import { StorageBackendsController } from "../data-access/StorageBackendsController";
 import { StorageBackendConfig } from "../storage-backends/StorageBackendConfig";
 import { HostFileSystemBackend } from "../storage-backends/HostFileSystemBackend";
+import { SMBBackend } from "../storage-backends/SMBBackend";
+import { Dictionary, ObjectExtensions } from "acts-util-core";
+import { StorageBlocksController } from "../data-access/StorageBlocksController";
+import { CONST_STORAGEBLOCKS_MAX_REPLICATION, StorageTier } from "../constants";
+import { WebDAVBackend } from "../storage-backends/WebDAVBackend";
+
+export interface StorageBackendCreationData
+{
+    config: StorageBackendConfig;
+    name: string;
+    storageTier: StorageTier;
+}
+
+interface StorageBackendCacheData
+{
+    id: number;
+    instance: StorageBackend;
+    storageTier: StorageTier;
+}
 
 @Injectable
 export class StorageBackendsManager
 {
-    constructor(private storageBackendsController: StorageBackendsController)
+    constructor(private storageBackendsController: StorageBackendsController, private storageBlocksController: StorageBlocksController)
     {
-        this.backends = [];
+        this.backends = {};
     }
 
     //Public methods
-    public FindFastestBackendForReading()
+    public async Create(props: StorageBackendCreationData)
     {
-        return this.backends[0];
+        const backend = this.CreateBackendInstance(props.config);
+        if(await backend.ConnectionTest())
+        {
+            const id = await this.storageBackendsController.Create({
+                config: JSON.stringify(props.config),
+                name: props.name,
+                storageTier: props.storageTier
+            });
+            this.backends[id] = {
+                instance: backend,
+                id,
+                storageTier: props.storageTier
+            };
+            return id;
+        }
+    }
+
+    public async FindFastestBackendForReading(storageBlockId: number)
+    {
+        const backendId = await this.storageBlocksController.FindFastBackendIdThatHasBlock(storageBlockId);
+        return this.backends[backendId!]!.instance;
     }
 
     public FindFastestBackendForWriting()
     {
-        return this.backends[0];
+        return ObjectExtensions.Values(this.backends).NotUndefined().OrderBy(x => x.storageTier).First();
+    }
+
+    public FindReplicationBackends(storageBackendIds: number[])
+    {
+        //TODO: should also pass storage tier as argument and try to find backends that match that
+        return ObjectExtensions.Values(this.backends).NotUndefined().Filter(x => !storageBackendIds.includes(x.id)).OrderBy(x => x.storageTier).Take(CONST_STORAGEBLOCKS_MAX_REPLICATION);
     }
 
     public async Reload()
@@ -45,18 +90,28 @@ export class StorageBackendsManager
         const backends = await this.storageBackendsController.QueryAll();
         for (const backend of backends)
         {
-            const config = JSON.parse(backend.config) as StorageBackendConfig;
-            switch(config.type)
-            {
-                case "host-filesystem":
-                    return new HostFileSystemBackend(config.rootPath);
-                case "smb":
-                case "webdav":
-                    throw new Error("TODO: implement me " + config.type);
-            }
+            this.backends[backend.id] = {
+                id: backend.id,
+                instance: this.CreateBackendInstance(JSON.parse(backend.config)),
+                storageTier: backend.storageTier
+            };
+        }
+    }
+
+    //Private methods
+    private CreateBackendInstance(config: StorageBackendConfig): StorageBackend
+    {
+        switch(config.type)
+        {
+            case "host-filesystem":
+                return new HostFileSystemBackend(config.rootPath);
+            case "smb":
+                return new SMBBackend(config);
+            case "webdav":
+                return new WebDAVBackend(config);
         }
     }
 
     //State
-    private backends: StorageBackend[];
+    private backends: Dictionary<StorageBackendCacheData>;
 }

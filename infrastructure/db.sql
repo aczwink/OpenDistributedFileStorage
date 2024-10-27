@@ -76,10 +76,26 @@ CREATE TABLE `blobs_blocks` (
   `blobId` int(10) unsigned NOT NULL,
   `offset` int(10) unsigned NOT NULL,
   `blobBlockId` int(10) unsigned NOT NULL,
-  KEY `blobs_blocks_blobId` (`blobId`),
+  PRIMARY KEY (`blobId`,`offset`,`blobBlockId`),
   KEY `blobs_blocks_blobBlockId` (`blobBlockId`),
   CONSTRAINT `blobs_blocks_blobBlockId` FOREIGN KEY (`blobBlockId`) REFERENCES `blobblocks` (`id`),
   CONSTRAINT `blobs_blocks_blobId` FOREIGN KEY (`blobId`) REFERENCES `blobs` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `blobs_metadata`
+--
+
+DROP TABLE IF EXISTS `blobs_metadata`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `blobs_metadata` (
+  `blobId` int(10) unsigned NOT NULL,
+  `metadataKey` varchar(50) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `metadata` text NOT NULL,
+  PRIMARY KEY (`blobId`,`metadataKey`),
+  CONSTRAINT `blobs_metadata_blobId` FOREIGN KEY (`blobId`) REFERENCES `blobs` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -141,10 +157,45 @@ CREATE TABLE `files_revisions` (
   `fileId` int(10) unsigned NOT NULL,
   `blobId` int(10) unsigned NOT NULL,
   `creationTimestamp` datetime NOT NULL,
-  KEY `files_revisions_fileId` (`fileId`),
+  PRIMARY KEY (`fileId`,`blobId`,`creationTimestamp`),
   KEY `files_revisions_blobId` (`blobId`),
   CONSTRAINT `files_revisions_blobId` FOREIGN KEY (`blobId`) REFERENCES `blobs` (`id`),
   CONSTRAINT `files_revisions_fileId` FOREIGN KEY (`fileId`) REFERENCES `files` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `files_tags`
+--
+
+DROP TABLE IF EXISTS `files_tags`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `files_tags` (
+  `fileId` int(10) unsigned NOT NULL,
+  `tagId` int(10) unsigned NOT NULL,
+  KEY `files_tags_fileId` (`fileId`),
+  KEY `files_tags_tagId` (`tagId`),
+  CONSTRAINT `files_tags_fileId` FOREIGN KEY (`fileId`) REFERENCES `files` (`id`),
+  CONSTRAINT `files_tags_tagId` FOREIGN KEY (`tagId`) REFERENCES `tags` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `files_versions`
+--
+
+DROP TABLE IF EXISTS `files_versions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `files_versions` (
+  `fileId` int(10) unsigned NOT NULL,
+  `blobId` int(10) unsigned NOT NULL,
+  `title` varchar(100) NOT NULL,
+  KEY `files_versions_fileId` (`fileId`),
+  KEY `files_versions_blobId` (`blobId`),
+  CONSTRAINT `files_versions_blobId` FOREIGN KEY (`blobId`) REFERENCES `blobs` (`id`),
+  CONSTRAINT `files_versions_fileId` FOREIGN KEY (`fileId`) REFERENCES `files` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -156,9 +207,28 @@ DROP TABLE IF EXISTS `storagebackends`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `storagebackends` (
-  `id` varchar(200) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(200) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   `config` text NOT NULL,
+  `storageTier` tinyint(3) unsigned NOT NULL,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `storagebackends_storageblocks`
+--
+
+DROP TABLE IF EXISTS `storagebackends_storageblocks`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `storagebackends_storageblocks` (
+  `storageBackendId` int(10) unsigned NOT NULL,
+  `storageBlockId` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`storageBackendId`,`storageBlockId`),
+  KEY `storagebackends_storageblocks_storageBlockId` (`storageBlockId`),
+  CONSTRAINT `storagebackends_storageblocks_storageBackendId` FOREIGN KEY (`storageBackendId`) REFERENCES `storagebackends` (`id`),
+  CONSTRAINT `storagebackends_storageblocks_storageBlockId` FOREIGN KEY (`storageBlockId`) REFERENCES `storageblocks` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -187,8 +257,23 @@ DROP TABLE IF EXISTS `storageblocks_residual`;
 CREATE TABLE `storageblocks_residual` (
   `storageBlockId` int(10) unsigned NOT NULL,
   `leftSize` int(10) unsigned NOT NULL,
-  KEY `storageblocks_residual_storageBlockId` (`storageBlockId`),
+  PRIMARY KEY (`storageBlockId`),
   CONSTRAINT `storageblocks_residual_storageBlockId` FOREIGN KEY (`storageBlockId`) REFERENCES `storageblocks` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `tags`
+--
+
+DROP TABLE IF EXISTS `tags`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `tags` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `tag` varchar(200) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `tag` (`tag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -201,4 +286,4 @@ CREATE TABLE `storageblocks_residual` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-10-20 22:28:10
+-- Dump completed on 2024-10-27 22:30:39

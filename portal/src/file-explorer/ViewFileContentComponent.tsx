@@ -16,7 +16,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
+import { JSX_CreateElement, Use, UseAPI, UseRouteParameter } from "acfrontend";
+import { APIService } from "../APIService";
+import { FileMetaDataDTO } from "../../dist/api";
+import { VideoStreamComponent } from "./content/VideoStreamComponent";
+
+function FileContentShower(input: { metadata: FileMetaDataDTO })
+{
+    if(input.metadata.mediaType.startsWith("video/"))
+        return <VideoStreamComponent />;
+
+    return "Content can't be displayed";
+}
+
 export function ViewFileContentComponent()
 {
-    return "content";
+    const fileId = UseRouteParameter("route", "fileId", "unsigned");
+    
+    const apiState = UseAPI( () => Use(APIService).files._any_.get(fileId) );
+    return apiState.success ? <FileContentShower metadata={apiState.data} /> : apiState.fallback;
 }

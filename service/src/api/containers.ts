@@ -49,8 +49,37 @@ class _api_
     }
 }
 
-@APIController("containers/{containerId}/files")
+@APIController("containers/{containerId}")
 class _api2_
+{
+    constructor(private containersController: ContainersController)
+    {
+    }
+
+    @Common()
+    public async CheckContainerAccess(
+        @Path containerId: number,
+        @Auth("jwt") accessToken: AccessToken
+    )
+    {
+        const container = await this.containersController.Query(containerId);
+        if(container === undefined)
+            return NotFound("container not found");
+        if(!accessToken.containers.includes(container.requiredClaim))
+            return Forbidden("you don't have access to that container");
+    }
+
+    @Get()
+    public async Request(
+        @Path containerId: number,
+    )
+    {
+        return this.containersController.Query(containerId);
+    }
+}
+
+@APIController("containers/{containerId}/files")
+class _api3_
 {
     constructor(private containersController: ContainersController, private fileUploadService: FileUploadService, private filesController: FilesController)
     {

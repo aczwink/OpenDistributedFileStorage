@@ -18,29 +18,33 @@
 
 import { BootstrapIcon, JSX_CreateElement, JSX_Fragment, RouterButton, Use, UseAPI } from "acfrontend";
 import { APIService } from "../APIService";
-import { ContainerProperties } from "../../dist/api";
+import { StorageBackendDTO } from "../../dist/api";
 
-function ContainersList(input: { containers: ContainerProperties[] })
+function StorageBackendsList(input: { storageBackends: StorageBackendDTO[] })
 {
     return <>
         <table className="table table-hover table-striped">
             <thead>
                 <tr>
-                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Size in use</th>
                 </tr>
             </thead>
             <tbody>
-                {input.containers.map(x => <tr>
+                {input.storageBackends.map(x => <tr>
                     <td>{x.name}</td>
+                    <td>{x.config.type}</td>
+                    <td>{x.size.FormatBinaryPrefixed()}</td>
                 </tr>)}
             </tbody>
         </table>
-        <RouterButton color="primary" route="settings/containers/create"><BootstrapIcon>plus</BootstrapIcon></RouterButton>
+        <RouterButton color="primary" route="/settings/storagebackends/create"><BootstrapIcon>plus</BootstrapIcon></RouterButton>
     </>;
 }
 
-export function ListContainersComponent()
+export function ListStorageBackendsComponent()
 {
-    const apiState = UseAPI( () => Use(APIService).containers.get() );
-    return apiState.success ? <ContainersList containers={apiState.data} /> : apiState.fallback;
+    const apiState = UseAPI( () => Use(APIService).storagebackends.get() );
+    return apiState.success ? <StorageBackendsList storageBackends={apiState.data} /> : apiState.fallback;
 }

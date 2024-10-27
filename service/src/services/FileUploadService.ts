@@ -22,11 +22,14 @@ import { BlobsController } from "../data-access/BlobsController";
 import { StorageBlocksManager } from "./StorageBlocksManager";
 import { CONST_BLOCKSIZE } from "../constants";
 import { FilesController } from "../data-access/FilesController";
+import { JobOrchestrationService } from "./JobOrchestrationService";
 
 @Injectable
 export class FileUploadService
 {
-    constructor(private blobsController: BlobsController, private storageBackendsManager: StorageBlocksManager, private filesController: FilesController)
+    constructor(private blobsController: BlobsController, private storageBackendsManager: StorageBlocksManager, private filesController: FilesController,
+        private jobOrchestrationService: JobOrchestrationService
+    )
     {
     }
 
@@ -47,13 +50,23 @@ export class FileUploadService
         }
         await this.filesController.AddRevision(fileId, blobId);
 
+        this.OnFileBlobChanged(fileId);
+
         return fileId;
+    }
+
+    public async UploadBlob(buffer: Buffer)
+    {
+        const blobId = await this.ProcessBlob(Readable.from(buffer));
+        return blobId;
     }
 
     public async UploadRevision(fileId: number, buffer: Buffer)
     {
         const blobId = await this.ProcessBlob(Readable.from(buffer));
         await this.filesController.AddRevision(fileId, blobId);
+
+        this.OnFileBlobChanged(fileId);
     }
 
     //Private methods
@@ -152,5 +165,20 @@ export class FileUploadService
         await this.blobsController.AddBlobBlockStorage(newBlockId, storageBlock.id, storageBlock.offset);
 
         return newBlockId;
+    }
+
+    //Event handlers
+    private async OnFileBlobChanged(fileId: number)
+    {
+        const md = await this.filesController.Query(fileId);
+        const mediaType = md!.mediaType;
+
+        if(mediaType.startsWith("audio/") || mediaType.startsWith("image/") || mediaType.startsWith("video/"))
+        {
+            this.jobOrchestrationService.ScheduleJob({
+                type: "compute-thumbs",
+                fileId: fileId
+            });
+        }
     }
 }

@@ -1,0 +1,48 @@
+{
+    "rabbit_version": "4.0.2",
+    "vhosts": [
+        {
+            "name": "OpenObjectStorage",
+            "description": "",
+            "tags": [],
+            "default_queue_type": "classic",
+            "metadata": {
+                "description": "",
+                "tags": [],
+                "default_queue_type": "classic"
+            }
+        }
+    ],
+    "queues": [
+        {
+            "name": "job-queue",
+            "vhost": "OpenObjectStorage",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {
+                "x-queue-type": "classic"
+            }
+        }
+    ],
+    "exchanges": [
+        {
+            "name": "job-exchange",
+            "vhost": "OpenObjectStorage",
+            "type": "fanout",
+            "durable": true,
+            "auto_delete": false,
+            "internal": false,
+            "arguments": {}
+        }
+    ],
+    "bindings": [
+        {
+            "source": "job-exchange",
+            "vhost": "OpenObjectStorage",
+            "destination": "job-queue",
+            "destination_type": "queue",
+            "routing_key": "",
+            "arguments": {}
+        }
+    ]
+}

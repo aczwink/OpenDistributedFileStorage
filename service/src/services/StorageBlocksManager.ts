@@ -17,10 +17,12 @@
  * */
 import path from "path";
 import { Injectable, Lock } from "acts-util-node";
-import { CONST_BLOCKSIZE, CONST_NUMBER_OF_STORAGE_BLOCKS_PER_DIR } from "../constants";
+import { CONST_BLOCKSIZE, CONST_NUMBER_OF_STORAGE_BLOCKS_PER_DIR, CONST_STORAGEBLOCKS_MAX_REPLICATION } from "../constants";
 import { StorageBlocksController } from "../data-access/StorageBlocksController";
 import { StorageEncryptionManager } from "./StorageEncryptionManager";
 import { StorageBackendsManager } from "./StorageBackendsManager";
+import { StorageBlocksCache } from "./StorageBlocksCache";
+import { JobOrchestrationService } from "./JobOrchestrationService";
 
 /*
 Special care needs to be taken into account for residual blocks as these can be mutated until they are full.
@@ -33,7 +35,8 @@ For simplicity reasons, the current implementation allows only a single operatio
 export class StorageBlocksManager
 {
     constructor(private storageBlocksController: StorageBlocksController, private storageEncryptionManager: StorageEncryptionManager,
-        private storageBackendsManager: StorageBackendsManager
+        private storageBackendsManager: StorageBackendsManager, private storageBlocksCache: StorageBlocksCache,
+        private jobOrchestrationService: JobOrchestrationService
     )
     {
         this.residualBlocksLock = new Lock;
@@ -54,38 +57,82 @@ export class StorageBlocksManager
         return this.DownloadStorageBlockImpl(storageBlockId);
     }
 
+    public async Replicate(storageBlockId: number)
+    {
+        const storageBackendIds = await this.storageBlocksController.QueryBlockLocations(storageBlockId);
+        if(storageBackendIds.length >= CONST_STORAGEBLOCKS_MAX_REPLICATION)
+            return;
+
+        const replicationBackends = this.storageBackendsManager.FindReplicationBackends(storageBackendIds).ToArray();
+        if(replicationBackends.length > 0)
+        {
+            const isResidual = await this.storageBlocksController.IsResidualBlock(storageBlockId);
+            let releaser;
+            if(isResidual)
+                releaser = await this.residualBlocksLock.Lock();
+            
+            const encryptedBlock = await this.DownloadEncryptedStorageBlock(storageBlockId);
+            for (const replicationBackend of replicationBackends)
+            {
+                const storageBlockPath = this.FetchStorageBlockPath(storageBlockId);
+                await replicationBackend.instance.CreateDirectoryIfNotExisting(path.dirname(storageBlockPath));
+                await replicationBackend.instance.StoreFile(storageBlockPath, encryptedBlock);
+                await this.storageBlocksController.AddBlockLocation(storageBlockId, replicationBackend.id);
+            }
+
+            releaser?.Release();
+        }
+    }
+
     public async StoreBlobBlock(blobBlock: Buffer)
     {
+        let result;
         if(blobBlock.byteLength === CONST_BLOCKSIZE)
         {
             const storageBlockId = await this.storageBlocksController.CreateBlock();
-
-            return await this.StoreBlock({ id: storageBlockId, offset: 0 }, blobBlock);
+            result = await this.StoreBlock({ id: storageBlockId, offset: 0 }, blobBlock);
         }
         else
         {
             const releaser = await this.residualBlocksLock.Lock();
 
             const storageBlock = await this.FindResidualStorageBlock(blobBlock.byteLength);
-            const result = await this.StoreBlock(storageBlock, blobBlock);
+            this.storageBlocksCache.RemoveFromCache(storageBlock.id);
+            result = await this.StoreBlock(storageBlock, blobBlock);
 
             releaser.Release();
-        
-            return result;
         }
+
+        this.jobOrchestrationService.ScheduleJob({
+            type: "replicate",
+            storageBlockId: result.id
+        });
+
+        return result;
     }
 
     //Private methods
-    private async DownloadStorageBlockImpl(storageBlockId: number)
+    private async DownloadEncryptedStorageBlock(storageBlockId: number)
     {
-        const backend = this.storageBackendsManager.FindFastestBackendForReading();
+        const backend = await this.storageBackendsManager.FindFastestBackendForReading(storageBlockId);
 
         const storageBlockPath = this.FetchStorageBlockPath(storageBlockId);
         const read = await backend.ReadFile(storageBlockPath);
 
+        return read;
+    }
+
+    private async DownloadStorageBlockImpl(storageBlockId: number)
+    {
+        const cached = this.storageBlocksCache.TryServe(storageBlockId);
+        if(cached !== undefined)
+            return cached;
+
+        const read = await this.DownloadEncryptedStorageBlock(storageBlockId);
         const encryptionInfo = await this.storageBlocksController.QueryEncryptionInfo(storageBlockId);
         const decrypted = await this.storageEncryptionManager.Decrypt(this.GetPartitionNumber(storageBlockId), read, encryptionInfo!.iv, encryptionInfo!.authTag);
 
+        this.storageBlocksCache.AddToCache(storageBlockId, decrypted);
         return decrypted;
     }
 
@@ -112,10 +159,11 @@ export class StorageBlocksManager
         }
         else
         {
+            const offset = CONST_BLOCKSIZE - storageBlock.leftSize;
             await this.storageBlocksController.ReduceLeftSizeOfResidualBlock(storageBlock.storageBlockId, storageBlock.leftSize - byteSize);
             return {
                 id: storageBlock.storageBlockId,
-                offset: CONST_BLOCKSIZE - storageBlock.leftSize
+                offset
             };
         }
     }
@@ -129,11 +177,10 @@ export class StorageBlocksManager
     private async StoreBlock(storageBlock: { id: number; offset: number; }, blobBlock: Buffer)
     {
         const backend = this.storageBackendsManager.FindFastestBackendForWriting();
+        const backendInstance = backend.instance;
 
-        const partitionNumber = this.GetPartitionNumber(storageBlock.id);
         const storageBlockPath = this.FetchStorageBlockPath(storageBlock.id);
-
-        await backend.CreateDirectoryIfNotExisting(path.dirname(storageBlockPath));
+        await backendInstance.CreateDirectoryIfNotExisting(path.dirname(storageBlockPath));
 
         let targetBuffer;        
         if(storageBlock.offset === 0)
@@ -141,12 +188,23 @@ export class StorageBlocksManager
         else
         {
             const decrypted = await this.DownloadStorageBlockImpl(storageBlock.id);
+            if(storageBlock.offset < decrypted.byteLength)
+                throw new Error("SHOULD NEVER HAPPEN!");
+            else if(storageBlock.offset > decrypted.byteLength)
+            {
+                //happens when storing a block raises an error but the leftSize in db already changed. clearly a programming error. should be fixed
+                const diff = storageBlock.offset - decrypted.byteLength;
+                blobBlock = Buffer.concat([Buffer.alloc(diff), blobBlock]); //insert padding
+            }
             targetBuffer = Buffer.concat([decrypted, blobBlock]);
 
         }
+        const partitionNumber = this.GetPartitionNumber(storageBlock.id);
         const encryptionResult = await this.storageEncryptionManager.Encrypt(partitionNumber, targetBuffer);
-        await backend.StoreFile(storageBlockPath, encryptionResult.encrypted);
+        await backendInstance.StoreFile(storageBlockPath, encryptionResult.encrypted);
         await this.storageBlocksController.UpdateEncryptionInfo(storageBlock.id, encryptionResult.iv, encryptionResult.authTag);
+
+        await this.storageBlocksController.UpdateBlockLocation(storageBlock.id, backend.id);
 
         return storageBlock;
     }

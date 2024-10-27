@@ -26,6 +26,11 @@ export class HostFileSystemBackend implements StorageBackend
     }
 
     //Public methods
+    public async ConnectionTest(): Promise<boolean>
+    {
+        return fs.existsSync(this.rootPath);
+    }
+
     public async CreateDirectoryIfNotExisting(dirPath: string): Promise<void>
     {
         const fullPath = path.join(this.rootPath, dirPath);

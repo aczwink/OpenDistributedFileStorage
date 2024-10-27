@@ -18,3 +18,5 @@
 
 import "./api/containers";
 import "./api/files";
+import "./api/storage-backends";
+import "./api/stream";

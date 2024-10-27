@@ -25,11 +25,24 @@ import { ViewFileComponent } from "./file-explorer/ViewFileComponent";
 import { ViewFileContentComponent } from "./file-explorer/ViewFileContentComponent";
 import { ViewFileRevisionsComponent } from "./file-explorer/ViewFileRevisionsComponent";
 import { CONFIG_OIDC } from "./config";
-import { SCOPE_ADMIN, SCOPE_FILES_READ } from "./definitions";
+import { SCOPE_ADMIN, SCOPE_FILES_READ, SCOPE_FILES_WRITE } from "./definitions";
+import { EditTagsComponent } from "./file-explorer/EditTagsComponent";
+import { SettingsComponent } from "./SettingsComponent";
+import { ListStorageBackendsComponent } from "./storage-backends/ListStorageBackendsComponent";
+import { CreateStorageBackendComponent } from "./storage-backends/CreateStorageBackendComponent";
+import { ViewFileVersionsComponent } from "./file-explorer/ViewFileVersionsComponent";
+import { CreateFileVersionComponent } from "./file-explorer/CreateFileVersionComponent";
+import { EditAVMetaDataComponent } from "./file-explorer/EditAVMetaDataComponent";
+
+const writeGuard = new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_FILES_WRITE] });
 
 const fileRoutes: Routes = [
-    { path: "revisions", component: <ViewFileRevisionsComponent /> },
     { path: "content", component: <ViewFileContentComponent /> },
+    { path: "edittags", component: <EditTagsComponent />, guards: [ writeGuard ] },
+    { path: "metadata", component: <EditAVMetaDataComponent />, guards: [ writeGuard ] },
+    { path: "revisions", component: <ViewFileRevisionsComponent /> },
+    { path: "versions/create", component: <CreateFileVersionComponent />, guards: [ writeGuard ] },
+    { path: "versions", component: <ViewFileVersionsComponent /> },
     { path: "", redirect: "content" }
 ];
 
@@ -41,12 +54,14 @@ const containerRoutes: Routes = [
 const settingsRoutes: Routes = [
     { path: "containers/create", component: <CreateContainersComponent /> },
     { path: "containers", component: <ListContainersComponent /> },
+    { path: "storagebackends/create", component: <CreateStorageBackendComponent /> },
+    { path: "storagebackends", component: <ListStorageBackendsComponent /> },
     { path: "", redirect: "containers" }
 ];
 
 export const routes : Routes = [
     { path: "accessdenied", component: <p>Access denied.</p> },
-    { path: "settings", children: settingsRoutes, guards: [ new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_ADMIN] }) ] },
+    { path: "settings", component: <SettingsComponent />, children: settingsRoutes, guards: [ new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_ADMIN] }) ] },
     { path: "{containerId}", children: containerRoutes, guards: [ new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_FILES_READ] }) ] },
     { path: "", component: <ContainerSelectionComponent />, guards: [ new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_FILES_READ] }) ] }
 ];

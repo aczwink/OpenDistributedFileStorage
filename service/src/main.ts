@@ -27,6 +27,13 @@ import { CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT } from "./config";
 import { FtpSrv, GeneralError } from "ftp-srv";
 import { FTPFileSystem } from "./FTPFileSystem";
 import { StorageBackendsManager } from "./services/StorageBackendsManager";
+import { MessagingService } from "./services/MessagingService";
+import { JobOrchestrationService } from "./services/JobOrchestrationService";
+import { StreamingVersionService } from "./services/StreamingVersionService";
+import { ThumbnailService } from "./services/ThumbnailService";
+import { StreamingService } from "./services/StreamingService";
+import { AccessCounterService } from "./services/AccessCounterService";
+import { StorageBlocksManager } from "./services/StorageBlocksManager";
 
 async function DownloadPublicKey()
 {
@@ -58,18 +65,55 @@ async function BootstrapServer()
     requestHandlerChain.AddCORSHandler([CONFIG_ORIGIN]);
     requestHandlerChain.AddBodyParser();
 
-    requestHandlerChain.AddRequestHandler(new HTTP.JWTVerifier(
+    const jwtVerifier = new HTTP.JWTVerifier(
         crypto.createPublicKey({
             key: await DownloadPublicKey(),
             format: 'jwk'
         }),
         "http://" + CONFIG_OIDP_ENDPOINT, //TODO WHY HTTP AND NOT HTTPS?
         true
-    ));
+    );
+    const streamingService = GlobalInjector.Resolve(StreamingService);
+    requestHandlerChain.AddRequestHandler({
+        async HandleRequest(request)
+        {
+            if(request.routePath.startsWith("/stream?"))
+                return null;
+            const result = await jwtVerifier.HandleRequest(request);
+            if(result !== null)
+                return result;
+            streamingService.Invalidate(request.headers.authorization!);
+            return null;
+        },
+    });
 
     await import("./__http_registry");
 
     await GlobalInjector.Resolve(StorageBackendsManager).Reload();
+
+    //make sure some services are instantiated because they do stuff on startup
+    GlobalInjector.Resolve(AccessCounterService);
+    GlobalInjector.Resolve(MessagingService);
+
+    const jobOrchestrator = GlobalInjector.Resolve(JobOrchestrationService);
+    jobOrchestrator.handler = async function(job)
+    {
+        switch(job.type)
+        {
+            case "compute-streaming-version":
+                await GlobalInjector.Resolve(StreamingVersionService).Compute(job.fileId, job.targetType);
+                break;
+            case "compute-thumbs":
+                await GlobalInjector.Resolve(ThumbnailService).Compute(job.fileId);
+                break;
+            case "replicate":
+                await GlobalInjector.Resolve(StorageBlocksManager).Replicate(job.storageBlockId);
+                break;
+        }
+    };
+    setTimeout(() => {
+        jobOrchestrator.StartWorker();
+    }, 1000);
 
     const openAPIDef: OpenAPI.Root = (await import("../dist/openapi.json")) as any;
     const backendStructure: any = await import("../dist/openapi-structure.json");
@@ -85,6 +129,7 @@ async function BootstrapServer()
     {
         console.log("Shutting server down...");
         GlobalInjector.Resolve(DBConnectionsManager).Close();
+        GlobalInjector.Resolve(MessagingService).Close();
         server.close();
     });
 }

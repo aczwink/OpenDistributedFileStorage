@@ -15,23 +15,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
-import { StorageBackend } from "./StorageBackend";
+import { rcloneBasedBackend } from "./rcloneBasedBackend";
+import { WebDAVBackendConfig } from "./StorageBackendConfig";
 
-export class WebDAVBackend implements StorageBackend
+export class WebDAVBackend extends rcloneBasedBackend
 {
-    //Public methods
-    public async CreateDirectoryIfNotExisting(dirPath: string): Promise<void>
+    constructor(private config: WebDAVBackendConfig)
     {
-        throw new Error("TODO: implement me");
+        super();
     }
 
-    public async ReadFile(filePath: string): Promise<Buffer>
+    //Protected properties
+    protected get protocolName(): string
     {
-        throw new Error("TODO: implement me");
+        return "webdav";
     }
 
-    public async StoreFile(filePath: string, buffer: Buffer): Promise<void>
+    protected get rootPath(): string
     {
-        throw new Error("TODO: implement me");
+        return this.config.rootPath;
+    }
+
+    //Protected methods
+    protected async GetBackendArgs(): Promise<string[]>
+    {
+        return [
+            "--webdav-url", this.config.serverURL,
+            "--webdav-user", this.config.userName,
+            "--webdav-pass", await this.ObscurePassword(this.config.password),
+        ];
     }
 }

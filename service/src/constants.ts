@@ -16,7 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
+export const CONST_FILESEQUENCECACHE_NUMBER_OF_ENTRIES_PER_BLOCK = 1000;
+
 export const CONST_BLOCKSIZE = 100 * 1024 * 1024; //100 MiB
 export const CONST_NUMBER_OF_STORAGE_BLOCKS_PER_DIR = 10000;
 
 export const CONST_AUTHTAG_LENGTH = 16;
+
+export const CONST_STORAGEBLOCKS_MAX_REPLICATION = 3;
+
+export enum StorageTier
+{
+    Hot = 0,
+    Cool = 1,
+    Archive = 2
+}

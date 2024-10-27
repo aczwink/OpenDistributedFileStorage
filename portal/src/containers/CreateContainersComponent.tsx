@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { BootstrapIcon, FormField, JSX_CreateElement, JSX_Fragment, LineEdit, OAuth2Guard, PushButton, Router, Use, UseDeferredAPI, UseState } from "acfrontend";
+import { BootstrapIcon, FormField, JSX_CreateElement, JSX_Fragment, LineEdit, PushButton, Router, Use, UseDeferredAPI, UseState } from "acfrontend";
 import { APIService } from "../APIService";
 import { APIResponse } from "acfrontend/dist/RenderHelpers";
 import { ContainerProperties } from "../../dist/api";
 
-export function ContainerFormComponent(input: { saveAPI: (data: ContainerProperties) => Promise<APIResponse<void>>  })
+function ContainerFormComponent(input: { saveAPI: (data: ContainerProperties) => Promise<APIResponse<void>>  })
 {
     const state = UseState({
         name: "",

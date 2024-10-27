@@ -35,7 +35,38 @@ export class FileDownloadService
         return Buffer.concat(buffers);
     }
 
+    public async DownloadBlobSlice(blobId: number, offset: number, length: number)
+    {
+        const entries = await this.blobsController.QueryBlobStorageInfo(blobId);
+        const matchingEntries = entries.Values().Map(x => this.ComputeOverlap(offset, length, x)).Filter(x => x.size > 0).ToArray();
+        const buffers = await matchingEntries.Values().Map(this.DownloadPart.bind(this)).PromiseAll();
+
+        return Buffer.concat(buffers);
+    }
+
     //Private methods
+    private ComputeOverlap(offset: number, length: number, entry: BlobStorageInfoEntry): BlobStorageInfoEntry
+    {
+        function ClampToBlock(offset: number)
+        {
+            const notNegative = Math.max(offset, 0);
+            const notPastEnd = Math.min(notNegative, entry.size);
+
+            return notPastEnd;
+        }
+
+        const relativeOffset = offset - entry.offset;
+        const relativeEnd = relativeOffset + length;
+
+        const startOffset = ClampToBlock(relativeOffset);
+        return {
+            offset: startOffset,
+            size: ClampToBlock(relativeEnd) - startOffset,
+            storageBlockId: entry.storageBlockId,
+            storageBlockOffset: entry.storageBlockOffset + startOffset
+        };
+    }
+
     private async DownloadPart(part: BlobStorageInfoEntry)
     {
         const storageBlock = await this.storageBackendsManager.DownloadStorageBlock(part.storageBlockId);

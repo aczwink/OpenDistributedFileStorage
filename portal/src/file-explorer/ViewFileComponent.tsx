@@ -18,7 +18,7 @@
 
 import { Injectable, Component, RouteParamProperty, ProgressSpinner, JSX_CreateElement, JSX_Fragment, BootstrapIcon, Anchor, FileDownloadService, NavItem, RouterComponent, InfoMessageManager } from "acfrontend";
 import { APIService } from "../APIService";
-import { FileMetaData } from "../../dist/api";
+import { FileMetaDataDTO } from "../../dist/api";
 
 let dragCounter = 0;
 
@@ -33,6 +33,7 @@ export class ViewFileComponent extends Component
         super();
 
         this.data = null;
+        this.containerName = "Container";
     }
     
     protected Render(): RenderValue
@@ -83,7 +84,9 @@ export class ViewFileComponent extends Component
     {
         return <ul className="nav nav-pills flex-column">
             <NavItem route={"/" + this.containerId + "/" + this.fileId + "/content"}><BootstrapIcon>eyeglasses</BootstrapIcon> View</NavItem>
+            {this.data?.mediaType.startsWith("audio/") ? <NavItem route={"/" + this.containerId + "/" + this.fileId + "/metadata"}><BootstrapIcon>info-circle</BootstrapIcon> Song info</NavItem> : null}
             <NavItem route={"/" + this.containerId + "/" + this.fileId + "/revisions"}><BootstrapIcon>card-list</BootstrapIcon> Revisions</NavItem>
+            <NavItem route={"/" + this.containerId + "/" + this.fileId + "/versions"}><BootstrapIcon>clock-history</BootstrapIcon> Versions</NavItem>
         </ul>;
     }
 
@@ -93,7 +96,7 @@ export class ViewFileComponent extends Component
         parts.pop(); //remove file
 
         if(parts.length === 0)
-            return <li className="breadcrumb-item"><Anchor route={"/" + this.containerId}>TODO: Container name</Anchor></li>;
+            return <li className="breadcrumb-item"><Anchor route={"/" + this.containerId}>{this.containerName}</Anchor></li>;
     }
 
     private RenderNavbar()
@@ -109,7 +112,11 @@ export class ViewFileComponent extends Component
                 </nav>
             </div>
             <div className="col-auto">
-                <a className="text-primary" role="button" onclick={this.OnDownloadFile.bind(this)}><BootstrapIcon>download</BootstrapIcon></a>
+                {this.data!.tags.map(t => <span className="badge rounded-pill text-bg-primary">{t}</span>)}
+            </div>
+            <div className="col-auto">
+                <a className="text-primary px-1" role="button" onclick={this.OnDownloadFile.bind(this)}><BootstrapIcon>download</BootstrapIcon></a>
+                {this.apiService.readOnly ? null : <Anchor className="px-1" route={"/" + this.containerId + "/" + this.fileId + "/edittags"}><BootstrapIcon>pencil</BootstrapIcon></Anchor>}
             </div>
         </div>;
     }
@@ -201,11 +208,16 @@ export class ViewFileComponent extends Component
         await this.UploadFiles(files);
     }
 
-    override OnInitiated(): void
+    override async OnInitiated(): Promise<void>
     {
+        const response = await this.apiService.containers._any_.get(this.containerId);
+        if(response.statusCode !== 200)
+            throw new Error("TODO: implement me");
+        this.containerName = response.data.name;
         this.LoadData();
     }
 
     //State
-    private data: FileMetaData | null;
+    private data: FileMetaDataDTO | null;
+    private containerName: string;
 }

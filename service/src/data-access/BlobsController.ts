@@ -27,6 +27,7 @@ interface BlockBlob
 
 export interface BlobStorageInfoEntry
 {
+    offset: number;
     size: number;
     storageBlockId: number;
     storageBlockOffset: number;
@@ -113,6 +114,7 @@ export class BlobsController
         FROM blobs_blocks bb
         INNER JOIN blobblocks bbs
             ON bbs.id = bb.blobBlockId
+        WHERE bb.blobId = ?
         ORDER BY bb.offset DESC
         LIMIT 1
         `;
@@ -124,7 +126,7 @@ export class BlobsController
     public async QueryBlobStorageInfo(blobId: number)
     {
         const query = `
-        SELECT bbs.size, bbsb.storageBlockId, bbsb.storageBlockOffset
+        SELECT bb.offset, bbs.size, bbsb.storageBlockId, bbsb.storageBlockOffset
         FROM blobs_blocks bb
         INNER JOIN blobblocks bbs
             ON bbs.id = bb.blobBlockId
@@ -136,5 +138,26 @@ export class BlobsController
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         const rows = await conn.Select<BlobStorageInfoEntry>(query, blobId);
         return rows;
+    }
+
+    public async QueryMetaData(blobId: number, key: string)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const row = await conn.SelectOne("SELECT metadata FROM blobs_metadata WHERE blobId = ? AND metadataKey = ?", blobId, key);
+        return row?.metadata as string | undefined;
+    }
+
+    public async WriteMetaData(blobId: number, key: string, data: string)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const result = await conn.UpdateRows("blobs_metadata", { metadata: data }, "blobId = ? AND metadataKey = ?", blobId, key);
+        if(result.changedRows === 0)
+        {
+            await conn.InsertRow("blobs_metadata", {
+                blobId: blobId,
+                metadataKey: key,
+                metadata: data,
+            });
+        }
     }
 }

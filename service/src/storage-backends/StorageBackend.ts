@@ -18,6 +18,7 @@
 
 export interface StorageBackend
 {
+    ConnectionTest(): Promise<boolean>;
     CreateDirectoryIfNotExisting(dirPath: string): Promise<void>;
     ReadFile(filePath: string): Promise<Buffer>;
     StoreFile(filePath: string, buffer: Buffer): Promise<void>;

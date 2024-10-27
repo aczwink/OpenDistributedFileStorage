@@ -15,23 +15,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
-import { StorageBackend } from "./StorageBackend";
+import { rcloneBasedBackend } from "./rcloneBasedBackend";
+import { SMBBackendConfig } from "./StorageBackendConfig";
 
-export class SMBBackend implements StorageBackend
+export class SMBBackend extends rcloneBasedBackend
 {
-    //Public methods
-    public async CreateDirectoryIfNotExisting(dirPath: string): Promise<void>
+    constructor(private config: SMBBackendConfig)
     {
-        throw new Error("TODO: implement me");
+        super();
     }
 
-    public async ReadFile(filePath: string): Promise<Buffer>
+    //Protected properties
+    protected get protocolName(): string
     {
-        throw new Error("TODO: implement me");
+        return "smb";
     }
 
-    public async StoreFile(filePath: string, buffer: Buffer): Promise<void>
+    protected get rootPath(): string
     {
-        throw new Error("TODO: implement me");
+        return this.config.rootPath;
+    }
+
+    //Protected methods
+    protected async GetBackendArgs(): Promise<string[]>
+    {
+        return [
+            "--smb-host", this.config.hostName,
+            "--smb-user", this.config.userName,
+            "--smb-pass", await this.ObscurePassword(this.config.password),
+        ];
     }
 }

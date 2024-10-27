@@ -16,13 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-export const OIDC_API_SCHEME = "oidc";
-export const SCOPE_ADMIN = "Admin";
-export const SCOPE_FILES_WRITE = "Files.Write";
-
-export interface AccessToken
+export class YearCache
 {
-    containers: string[];
-    exp: number;
-    sub: string;
+    //TODO: cache counters of file (without time stamp and user, just the year count over all users)
+    //this should be used for past years after YearMonthCache
 }

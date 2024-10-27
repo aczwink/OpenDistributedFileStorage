@@ -69,7 +69,7 @@ export class DirectoryViewComponent extends Component
     {
         return <div className="col-auto">
             <Anchor route={"/" + this.containerId + "/" + fileData.id}>
-                <h3 className="text-center"><ThumbnailComponent mediaType={fileData.mediaType} /></h3>
+                <h3 className="text-center"><ThumbnailComponent fileId={fileData.id} mediaType={fileData.mediaType} /></h3>
                 {fileData.filePath.substring(this.dirPath.length)}
             </Anchor>
         </div>;

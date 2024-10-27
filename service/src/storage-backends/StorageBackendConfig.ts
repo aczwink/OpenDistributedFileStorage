@@ -22,14 +22,22 @@ interface HostFileSystemBackendConfig
     rootPath: string;
 }
 
-interface SMBBackendConfig
+export interface SMBBackendConfig
 {
     type: "smb";
+    hostName: string;
+    userName: string;
+    password: string;
+    rootPath: string;
 }
 
-interface WebDAVBackendConfig
+export interface WebDAVBackendConfig
 {
     type: "webdav";
+    serverURL: string;
+    userName: string;
+    password: string;
+    rootPath: string;
 }
 
 export type StorageBackendConfig = HostFileSystemBackendConfig | SMBBackendConfig | WebDAVBackendConfig;

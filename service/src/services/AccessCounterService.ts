@@ -15,14 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
+import { Injectable } from "acts-util-node";
+import { FileSequenceCache } from "../access-cache/FileSequenceCache";
 
-export const OIDC_API_SCHEME = "oidc";
-export const SCOPE_ADMIN = "Admin";
-export const SCOPE_FILES_WRITE = "Files.Write";
+const accessCounterRootDir = "/etc/OpenDistributedFileStorage/accessCounters";
+const latestDir = accessCounterRootDir + "/latest";
 
-export interface AccessToken
+@Injectable
+export class AccessCounterService
 {
-    containers: string[];
-    exp: number;
-    sub: string;
+    constructor()
+    {
+        this.latest = new FileSequenceCache(latestDir);
+    }
+
+    //Public methods
+    public Add(userId: string, fileId: number)
+    {
+        this.latest.AddEntry(userId, fileId);
+    }
+
+    //State
+    private latest: FileSequenceCache;
 }

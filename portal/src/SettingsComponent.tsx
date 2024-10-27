@@ -16,13 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-export const OIDC_API_SCHEME = "oidc";
-export const SCOPE_ADMIN = "Admin";
-export const SCOPE_FILES_WRITE = "Files.Write";
+import { BootstrapIcon, JSX_CreateElement, NavItem, RouterComponent } from "acfrontend";
 
-export interface AccessToken
+export function SettingsComponent()
 {
-    containers: string[];
-    exp: number;
-    sub: string;
+    return <div className="container">
+        <div className="row">
+            <div className="col-auto">
+                <ul className="nav nav-pills flex-column">
+                    <NavItem route={"/settings/containers"}><BootstrapIcon>eyeglasses</BootstrapIcon> Containers</NavItem>
+                    <NavItem route={"/settings/storagebackends"}><BootstrapIcon>eyeglasses</BootstrapIcon> Storage backends</NavItem>
+                </ul>
+            </div>
+            <div className="col">
+                <RouterComponent />
+            </div>
+        </div>
+    </div>;
 }

@@ -80,15 +80,25 @@ export class FTPFileSystem extends FileSystem
         return children.Values().Map(x => this.FileStats(x)).PromiseAll();
     }
 
-    public override async read(fileName: string, options: { start?: any;}): Promise<any>
+    public override async read(fileName: string, options: { start?: any; }): Promise<any>
     {
         const split = this.SplitPath(fileName);
 
         const containerId = await containersController.FindIdByName(split.containerName);
         const fileId = await filesController.FindIdByName(containerId!, split.pathInContainer);
-        const file = await filesController.Query(fileId!);
-        
-        const buffer = await GlobalInjector.Resolve(FileDownloadService).DownloadBlob(file!.blobId);
+        const rev = await filesController.QueryNewestRevision(fileId!);
+
+        const fileDownloadService = GlobalInjector.Resolve(FileDownloadService);
+
+        let buffer;
+        if(options.start !== undefined)
+        {
+            const size = await blobsController.QueryBlobSize(rev!.blobId);
+            buffer = await fileDownloadService.DownloadBlobSlice(rev!.blobId, options.start, size! - options.start);
+        }
+        else
+            buffer = await fileDownloadService.DownloadBlob(rev!.blobId);
+
         return Readable.from(buffer);
     }
 

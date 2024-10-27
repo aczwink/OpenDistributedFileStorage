@@ -16,13 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-export const OIDC_API_SCHEME = "oidc";
-export const SCOPE_ADMIN = "Admin";
-export const SCOPE_FILES_WRITE = "Files.Write";
-
-export interface AccessToken
+export class YearMonthCache
 {
-    containers: string[];
-    exp: number;
-    sub: string;
+    //TODO: cache counters of file and user (without time stamp, just the month)
+    //this should be used for past months of the current year. current month should be in FileSequenceCache
 }
