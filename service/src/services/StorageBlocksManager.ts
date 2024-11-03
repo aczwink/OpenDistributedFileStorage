@@ -97,8 +97,8 @@ export class StorageBlocksManager
             const releaser = await this.residualBlocksLock.Lock();
 
             const storageBlock = await this.FindResidualStorageBlock(blobBlock.byteLength);
-            this.storageBlocksCache.RemoveFromCache(storageBlock.id);
             result = await this.StoreBlock(storageBlock, blobBlock);
+            this.storageBlocksCache.RemoveFromCache(storageBlock.id); //old version still in cache
 
             releaser.Release();
         }

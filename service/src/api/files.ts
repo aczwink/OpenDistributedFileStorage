@@ -30,10 +30,10 @@ import { StreamingVersionType } from "../BackgroundJob";
 import { JobOrchestrationService } from "../services/JobOrchestrationService";
 import { StreamingService } from "../services/StreamingService";
 import { HTTP } from "acts-util-node";
-import { FFProbe_MediaInfo, FFProbeService } from "../services/FFProbeService";
+import { FFProbeService } from "../services/FFProbeService";
 import { AccessCounterService } from "../services/AccessCounterService";
 import { BlobsController } from "../data-access/BlobsController";
-import { AudioMetadataTaggingService } from "../services/AudioMetadataTaggingService";
+import { AudioMetadataTaggingService, AudioMetadataTags } from "../services/AudioMetadataTaggingService";
 
 interface FileMetaDataDTO extends FileMetaData
 {   
@@ -110,7 +110,19 @@ class _api_
         const rev = await this.filesController.QueryNewestRevision(fileMetaData.id);
         const blobId = rev!.blobId;
 
-        return this.audioMetadataService.FetchTags(blobId);
+        const tags = await this.audioMetadataService.FetchTags(blobId);
+        if(tags === undefined)
+            return NotFound("no tags available for this file");
+        return tags;
+    }
+
+    @Post("meta")
+    public async UpdateInFileMetadata(
+        @Common fileMetaData: FileMetaData,
+        @Body audioMetadataTags: AudioMetadataTags
+    )
+    {
+        await this.audioMetadataService.CreateRevisionWithNewTags(fileMetaData.id, audioMetadataTags);
     }
 
     @Get("revisions")

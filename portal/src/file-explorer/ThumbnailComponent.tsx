@@ -74,6 +74,10 @@ export class ThumbnailComponent extends Component<{ fileId: number; mediaType: s
         {
             case "application/x-javascript":
                 return <BootstrapIcon>filetype-js</BootstrapIcon>;
+            case "audio/mp4":
+                return <BootstrapIcon>filetype-aac</BootstrapIcon>;
+            case "text/plain":
+                return <BootstrapIcon>filetype-txt</BootstrapIcon>;
             default:
                 return <BootstrapIcon>file</BootstrapIcon>;
         }

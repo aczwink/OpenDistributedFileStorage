@@ -16,12 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { FormField, JSX_CreateElement, LineEdit, TextArea, Use, UseAPI, UseRouteParameter, UseState } from "acfrontend";
+import { BootstrapIcon, FormField, JSX_CreateElement, LineEdit, PushButton, Router, TextArea, Use, UseAPI, UseDeferredAPI, UseRouteParameter, UseState } from "acfrontend";
 import { APIService } from "../APIService";
 import { AudioMetadataTags } from "../../dist/api";
 
-function FormComponent(input: { fileId: number; audioTags: AudioMetadataTags; })
+function FormComponent(input: { containerId: number; fileId: number; audioTags: AudioMetadataTags; })
 {
+    const apiState = UseDeferredAPI(
+        () => Use(APIService).files._any_.meta.post(input.fileId, state),
+        () => Use(Router).RouteTo("/" + input.containerId + "/" + input.fileId)
+    );
+    if(apiState.started)
+        return apiState.fallback;
+
     const state = UseState(input.audioTags);
     return <div className="container">
         <FormField title="Artist">
@@ -33,13 +40,15 @@ function FormComponent(input: { fileId: number; audioTags: AudioMetadataTags; })
         <FormField title="Comment">
             <TextArea value={state.comment} onChanged={newValue => state.comment = newValue} rows={5} />
         </FormField>
+        <PushButton color="primary" enabled onActivated={apiState.start}><BootstrapIcon>floppy</BootstrapIcon> Save</PushButton>
     </div>;
 }
 
 export function EditAVMetaDataComponent()
 {
+    const containerId = UseRouteParameter("route", "containerId", "unsigned");
     const fileId = UseRouteParameter("route", "fileId", "unsigned");
 
     const apiState = UseAPI( () => Use(APIService).files._any_.meta.get(fileId) );
-    return apiState.success ? <FormComponent fileId={fileId} audioTags={apiState.data} /> : apiState.fallback;
+    return apiState.success ? <FormComponent containerId={containerId} fileId={fileId} audioTags={apiState.data} /> : apiState.fallback;
 }

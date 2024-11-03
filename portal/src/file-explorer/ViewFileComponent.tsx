@@ -155,7 +155,7 @@ export class ViewFileComponent extends Component
     {
         dragCounter++;
         const elem = (this.vNode?.domNode as HTMLElement);
-        elem.className = "border border-2 border-primary rounded shadow";
+        elem.className = "border border-2 border-primary rounded shadow bg-primary-subtle opacity-50";
     }
 
     private OnDragLeave(event: DragEvent)
