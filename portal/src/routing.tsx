@@ -26,19 +26,21 @@ import { ViewFileContentComponent } from "./file-explorer/ViewFileContentCompone
 import { ViewFileRevisionsComponent } from "./file-explorer/ViewFileRevisionsComponent";
 import { CONFIG_OIDC } from "./config";
 import { SCOPE_ADMIN, SCOPE_FILES_READ, SCOPE_FILES_WRITE } from "./definitions";
-import { EditTagsComponent } from "./file-explorer/EditTagsComponent";
+import { EditFileAttributesComponent } from "./file-explorer/EditFileAttributesComponent";
 import { SettingsComponent } from "./SettingsComponent";
 import { ListStorageBackendsComponent } from "./storage-backends/ListStorageBackendsComponent";
 import { CreateStorageBackendComponent } from "./storage-backends/CreateStorageBackendComponent";
 import { ViewFileVersionsComponent } from "./file-explorer/ViewFileVersionsComponent";
 import { CreateFileVersionComponent } from "./file-explorer/CreateFileVersionComponent";
 import { EditAVMetaDataComponent } from "./file-explorer/EditAVMetaDataComponent";
+import { FileAccessesComponent } from "./file-explorer/FileAccessesComponent";
 
 const writeGuard = new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_FILES_WRITE] });
 
 const fileRoutes: Routes = [
+    { path: "accesses", component: <FileAccessesComponent /> },
     { path: "content", component: <ViewFileContentComponent /> },
-    { path: "edittags", component: <EditTagsComponent />, guards: [ writeGuard ] },
+    { path: "edit", component: <EditFileAttributesComponent />, guards: [ writeGuard ] },
     { path: "metadata", component: <EditAVMetaDataComponent />, guards: [ writeGuard ] },
     { path: "revisions", component: <ViewFileRevisionsComponent /> },
     { path: "versions/create", component: <CreateFileVersionComponent />, guards: [ writeGuard ] },

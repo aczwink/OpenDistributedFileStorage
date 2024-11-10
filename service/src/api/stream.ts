@@ -38,14 +38,17 @@ class _api_
         @Header Range?: string
     )
     {
-        if(!this.streamingService.Authenticate(streamingKey, blobId, request.ip))
+        const userId = this.streamingService.Authenticate(streamingKey, blobId, request.ip);
+        if(userId === null)
             return Forbidden("access denied");
 
         if(Range === undefined)
         {
-            const blob = await this.fileDownloadService.DownloadBlob(blobId);
+            const blob = await this.fileDownloadService.DownloadBlob(blobId, userId);
             return blob;
         }
+
+        this.streamingService.InformAboutPartialAccess(streamingKey, blobId, userId);
 
         const totalSize = await this.blobsController.QueryBlobSize(blobId);
         const parsed = this.ParseRangeHeader(Range, totalSize!);

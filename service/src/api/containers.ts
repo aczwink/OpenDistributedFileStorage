@@ -21,7 +21,15 @@ import { AccessToken, OIDC_API_SCHEME, SCOPE_ADMIN, SCOPE_FILES_WRITE } from "..
 import { ContainerProperties, ContainersController } from "../data-access/ContainersController";
 import { UploadedFile } from "acts-util-node/dist/http/UploadedFile";
 import { FileUploadService } from "../services/FileUploadService";
-import { FilesController } from "../data-access/FilesController";
+import { FileOverviewData, FilesController } from "../data-access/FilesController";
+import { TagsController } from "../data-access/TagsController";
+import { Of } from "acts-util-core";
+
+interface DirectoryContentsDTO
+{
+    dirs: string[];
+    files: FileOverviewData[];
+}
 
 @APIController("containers")
 class _api_
@@ -52,7 +60,9 @@ class _api_
 @APIController("containers/{containerId}")
 class _api2_
 {
-    constructor(private containersController: ContainersController)
+    constructor(private containersController: ContainersController, private filesController: FilesController,
+        private tagsController: TagsController
+    )
     {
     }
 
@@ -75,6 +85,27 @@ class _api2_
     )
     {
         return this.containersController.Query(containerId);
+    }
+
+    @Get("search")
+    public async SearchForFiles(
+        @Path containerId: number,
+        @Query dirPath: string,
+        @Query nameFilter: string,
+        @Query mediaTypeFilter: string,
+        @Query requiredTags: string
+    )
+    {
+        const tags = requiredTags.split(",").map(x => x.trim()).filter(x => x.length > 0);
+        const tagIds = [];
+        for (const tag of tags)
+        {
+            const tagId = await this.tagsController.QueryTagId(containerId, tag);
+            if(tagId === undefined)
+                return NotFound("unknown tag: " + tag);
+            tagIds.push(tagId);
+        }
+        return await this.filesController.Search(containerId, dirPath, nameFilter.toLowerCase(), mediaTypeFilter, tagIds);
     }
 }
 
@@ -117,6 +148,12 @@ class _api3_
         @Query dirPath: string
     )
     {
-        return await this.filesController.QueryChildrenOf(containerId, dirPath);
+        const files = await this.filesController.QueryDirectChildrenOf(containerId, dirPath);
+        const dirs = await this.filesController.QueryNextLabelChildrenOf(containerId, dirPath);
+
+        return Of<DirectoryContentsDTO>({
+            files,
+            dirs
+        });
     }
 }

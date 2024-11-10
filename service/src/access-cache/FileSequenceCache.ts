@@ -18,16 +18,18 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import zlib from "zlib";
 import { Dictionary, ObjectExtensions } from "acts-util-core";
 import { CONST_FILESEQUENCECACHE_NUMBER_OF_ENTRIES_PER_BLOCK } from "../constants";
+import { Compress, Decompress } from "./Compression";
+import { DateTime } from "acts-util-node";
 
 class FileSequenceCacheBlock
 {
     constructor()
     {
-        this.fileEntries = {};
+        this.blobEntries = {};
         this.entriesCount = 0;
+        this._newest = 0;
     }
 
     //Properties
@@ -36,71 +38,148 @@ class FileSequenceCacheBlock
         return this.entriesCount >= CONST_FILESEQUENCECACHE_NUMBER_OF_ENTRIES_PER_BLOCK;
     }
 
-    //Public methods
-    public AddEntry(userId: string, fileId: number)
+    public get newest()
     {
-        const accessTime = Date.now();
+        return this._newest;
+    }
 
-        const entriesPerFile = this.fileEntries[fileId];
-        if(entriesPerFile === undefined)
+    //Public methods
+    public AddEntry(userId: string, blobId: number)
+    {
+        const accessTime = DateTime.Now().millisecondsSinceEpoch;
+        this._newest = Math.max(this._newest, accessTime);
+
+        const entriesPerBlob = this.blobEntries[blobId];
+        if(entriesPerBlob === undefined)
         {
-            this.fileEntries[fileId] = {
+            this.blobEntries[blobId] = {
                 [userId]: [accessTime]
             };
         }
         else
         {
-            const entriesPerFileAndUser = entriesPerFile[userId];
-            if(entriesPerFileAndUser === undefined)
-                entriesPerFile[userId] = [accessTime];
+            const entriesPerBlobAndUser = entriesPerBlob[userId];
+            if(entriesPerBlobAndUser === undefined)
+                entriesPerBlob[userId] = [accessTime];
             else
-                entriesPerFileAndUser.push(accessTime);
+                entriesPerBlobAndUser.push(accessTime);
         }
+    }
+
+    public* Entries()
+    {
+        for (const blobId in this.blobEntries)
+        {
+            if (Object.prototype.hasOwnProperty.call(this.blobEntries, blobId))
+            {
+                const blobEntry = this.blobEntries[blobId]!;
+                for (const userId in blobEntry)
+                {
+                    if (Object.prototype.hasOwnProperty.call(blobEntry, userId))
+                    {
+                        const timeStamps = blobEntry[userId]!;
+                        yield {
+                            blobId: parseInt(blobId),
+                            userId,
+                            timeStamps
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    public FetchLastAccessTime(blobId: number)
+    {
+        const blobEntry = this.blobEntries[blobId];
+        if(blobEntry === undefined)
+            return 0;
+        return ObjectExtensions.Values(blobEntry).NotUndefined().Map(x => x.Values()).Flatten().Max();
+    }
+
+    public FetchAccessCounts(blobId: number)
+    {
+        const blobEntry = this.blobEntries[blobId];
+        if(blobEntry === undefined)
+            return 0;
+        return ObjectExtensions.Values(blobEntry).NotUndefined().Map(x => x.length).Sum();
     }
 
     public ToJSON()
     {
-        return JSON.stringify(this.fileEntries);
+        return JSON.stringify(this.blobEntries);
     }
 
     //Class functions
     static FromJSON(json: string)
     {
         const block = new FileSequenceCacheBlock;
-        block.fileEntries = JSON.parse(json);
-        block.entriesCount = ObjectExtensions.Values(block.fileEntries).NotUndefined()
+        block.blobEntries = JSON.parse(json);
+        block.entriesCount = ObjectExtensions.Values(block.blobEntries).NotUndefined()
             .Map(x => ObjectExtensions.Values(x)).Flatten().NotUndefined()
             .Map(x => x.length)
             .Sum();
+        block._newest = ObjectExtensions.Values(block.blobEntries).NotUndefined()
+            .Map(x => ObjectExtensions.Values(x)).Flatten().NotUndefined()
+            .Map(x => x.Values()).Flatten()
+            .Max();
 
         return block;
     }
 
     //State
-    private fileEntries: Dictionary<Dictionary<number[]>>;
+    private blobEntries: Dictionary<Dictionary<number[]>>;
     private entriesCount: number;
+    private _newest: number;
 }
 
 export class FileSequenceCache
 {
-    constructor(private dirPath: string)
+    private constructor(private dirPath: string)
     {
         this.sequence = {};
         this.latestId = "";
         this.dirtyIds = new Set;
-        
-        this.AddBlock();
-        this.Load();
+    }
+
+    //Class functions
+    public static async Load(dirPath: string)
+    {
+        const cache = new FileSequenceCache(dirPath);
+        await cache.LoadPersisted();
+        return cache;
     }
 
     //Public methods
-    public AddEntry(userId: string, fileId: number)
+    public AddEntry(userId: string, blobId: number)
     {
         if(this.latest.isFull)
             this.AddBlock();
 
-        this.latest.AddEntry(userId, fileId);
+        this.latest.AddEntry(userId, blobId);
         this.ScheduleWrite(this.latestId);
+    }
+
+    public FetchAccessCounts(blobId: number)
+    {
+        return ObjectExtensions.Values(this.sequence).NotUndefined().Map(x => x.FetchAccessCounts(blobId)).Sum();
+    }
+
+    public FetchLastAccessTime(blobId: number)
+    {
+        return ObjectExtensions.Values(this.sequence).NotUndefined().Map(x => x.FetchLastAccessTime(blobId)).Max();
+    }
+
+    public PrepareMigration(delta: DateTime)
+    {
+        return ObjectExtensions.Entries(this.sequence).Filter(kv => (kv.value!.isFull) && (this.latestId !== kv.key) && (kv.value!.newest < delta.millisecondsSinceEpoch));
+    }
+
+    public async Remove(blockId: string)
+    {
+        const blockPath = path.join(this.dirPath, blockId + ".json.gz");
+        await fs.promises.unlink(blockPath);
+        delete this.sequence[blockId];
     }
 
     //Private properties
@@ -117,40 +196,14 @@ export class FileSequenceCache
         this.latestId = newId;
     }
 
-    private Compress(data: string)
-    {
-        return new Promise<Buffer>( (resolve, reject) => {
-            zlib.gzip(data, {
-                level: zlib.constants.Z_BEST_COMPRESSION,
-            }, (error, result) => {
-                if(error !== null)
-                    reject(error);
-                else
-                    resolve(result);
-            });
-        });
-    }
-
-    private Decompress(data: Buffer)
-    {
-        return new Promise<Buffer>( (resolve, reject) => {
-            zlib.gunzip(data, (error, result) => {
-                if(error !== null)
-                    reject(error);
-                else
-                    resolve(result);
-            });
-        });
-    }
-
-    private async Load()
+    private async LoadPersisted()
     {
         const blockFileNames = await fs.promises.readdir(this.dirPath, "utf-8");
         for (const blockFileName of blockFileNames)
         {
             const blockPath = path.join(this.dirPath, blockFileName);
             const compressed = await fs.promises.readFile(blockPath);
-            const decompressed = await this.Decompress(compressed);
+            const decompressed = await Decompress(compressed);
 
             const id = blockFileName.substring(0, blockFileName.indexOf("."));
 
@@ -160,6 +213,9 @@ export class FileSequenceCache
             if(!block.isFull)
                 this.latestId = id;
         }
+
+        if(this.latestId === "")
+            this.AddBlock();
     }
     
     private async Persist()
@@ -171,7 +227,7 @@ export class FileSequenceCache
         for (const id of idsToPersist)
         {
             const block = this.sequence[id]!;
-            const compressed = await this.Compress(block.ToJSON());
+            const compressed = await Compress(block.ToJSON());
             await fs.promises.writeFile(path.join(this.dirPath, id + ".json.gz"), compressed);
         }
     }

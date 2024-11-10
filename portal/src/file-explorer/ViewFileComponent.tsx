@@ -85,6 +85,7 @@ export class ViewFileComponent extends Component
         return <ul className="nav nav-pills flex-column">
             <NavItem route={"/" + this.containerId + "/" + this.fileId + "/content"}><BootstrapIcon>eyeglasses</BootstrapIcon> View</NavItem>
             {this.data?.mediaType.startsWith("audio/") ? <NavItem route={"/" + this.containerId + "/" + this.fileId + "/metadata"}><BootstrapIcon>info-circle</BootstrapIcon> Song info</NavItem> : null}
+            <NavItem route={"/" + this.containerId + "/" + this.fileId + "/accesses"}><BootstrapIcon>graph-up</BootstrapIcon> Access statistics</NavItem>
             <NavItem route={"/" + this.containerId + "/" + this.fileId + "/revisions"}><BootstrapIcon>card-list</BootstrapIcon> Revisions</NavItem>
             <NavItem route={"/" + this.containerId + "/" + this.fileId + "/versions"}><BootstrapIcon>clock-history</BootstrapIcon> Versions</NavItem>
         </ul>;
@@ -92,11 +93,20 @@ export class ViewFileComponent extends Component
 
     private RenderNav()
     {
+        function JoinDir(idx: number)
+        {
+            return "/" + parts.slice(0, idx + 1).join("/");
+        }
+
         const parts = this.data!.filePath.substring(1).split("/");
         parts.pop(); //remove file
 
         if(parts.length === 0)
             return <li className="breadcrumb-item"><Anchor route={"/" + this.containerId}>{this.containerName}</Anchor></li>;
+        return <>
+            <li className="breadcrumb-item"><Anchor route={"/" + this.containerId}>{this.containerName}</Anchor></li>
+            {parts.map((x, i) => <li className="breadcrumb-item"><Anchor route={"/" + this.containerId + "?dirPath=" + JoinDir(i)}>{x}</Anchor></li>)}
+        </>;
     }
 
     private RenderNavbar()
@@ -116,7 +126,7 @@ export class ViewFileComponent extends Component
             </div>
             <div className="col-auto">
                 <a className="text-primary px-1" role="button" onclick={this.OnDownloadFile.bind(this)}><BootstrapIcon>download</BootstrapIcon></a>
-                {this.apiService.readOnly ? null : <Anchor className="px-1" route={"/" + this.containerId + "/" + this.fileId + "/edittags"}><BootstrapIcon>pencil</BootstrapIcon></Anchor>}
+                {this.apiService.readOnly ? null : <Anchor className="px-1" route={"/" + this.containerId + "/" + this.fileId + "/edit"}><BootstrapIcon>pencil</BootstrapIcon></Anchor>}
             </div>
         </div>;
     }

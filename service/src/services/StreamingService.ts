@@ -19,18 +19,21 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { Injectable } from "acts-util-node";
 import { Dictionary } from "acts-util-core";
+import { AccessCounterService } from "./AccessCounterService";
 
 interface StreamingInfo
 {
     allowedBlobIds: Set<number>;
     expireAt: number;
+    partiallyAccessedBlobIds: Set<number>;
     remoteIP: string;
+    userId: string;
 }
 
 @Injectable
 export class StreamingService
 {
-    constructor()
+    constructor(private accessCounterService: AccessCounterService)
     {
         this.streamingKeys = {};
         this.userIdToStreamingKey = {};
@@ -41,18 +44,18 @@ export class StreamingService
     {
         const info = this.streamingKeys[streamingKey];
         if(info === undefined)
-            return false;
+            return null;
         if((Date.now() / 1000) > info.expireAt)
         {
             delete this.streamingKeys[streamingKey];
-            return false;
+            return null;
         }
         if(!info.allowedBlobIds.has(blobId))
-            return false;
+            return null;
         if(info.remoteIP !== remoteIP)
-            return false;
+            return null;
 
-        return true;
+        return info.userId;
     }
 
     public CreateStreamingKey(userId: string, accessTokenExpiry: number, ip: string, blobIds: number[])
@@ -63,11 +66,25 @@ export class StreamingService
         this.streamingKeys[streamingKey] = {
             allowedBlobIds: new Set(blobIds),
             expireAt: accessTokenExpiry,
+            partiallyAccessedBlobIds: new Set(),
             remoteIP: ip,
+            userId
         };
         this.userIdToStreamingKey[userId] = streamingKey;
 
         return streamingKey as string;
+    }
+
+    public InformAboutPartialAccess(streamingKey: string, blobId: number, userId: string)
+    {
+        const info = this.streamingKeys[streamingKey];
+        const set = info!.partiallyAccessedBlobIds;
+
+        if(!set.has(blobId))
+        {
+            this.accessCounterService.AddBlobAccess(userId, blobId);
+            set.add(blobId);
+        }
     }
 
     public Invalidate(authorizationHeader: string)

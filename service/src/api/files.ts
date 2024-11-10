@@ -90,16 +90,35 @@ class _api_
         });
     }
 
+    @Put()
+    @Security(OIDC_API_SCHEME, [SCOPE_FILES_WRITE])
+    public async UpdateFileMetadata(
+        @Common fileMetaData: FileMetaData,
+        @BodyProp tags: string[],
+        @BodyProp filePath: string
+    )
+    {
+        await this.filesController.UpdatePath(fileMetaData.id, filePath);
+        await this.tagsController.UpdateFileTags(fileMetaData.id, tags);
+    }
+
+    @Get("access")
+    public RequestAccessStatistics(
+        @Common file: FileMetaData,
+    )
+    {
+        const counts = this.accessCounterService.FetchFileAccessCounts(file.id);
+        return counts;
+    }
+
     @Get("blob")
     public async RequestFileBlob(
         @Common file: FileMetaData,
         @Auth("jwt") accessToken: AccessToken
     )
     {
-        this.accessCounterService.Add(accessToken.sub, file.id);
-
         const rev = await this.filesController.QueryNewestRevision(file.id);
-        return this.fileDownloadService.DownloadBlob(rev!.blobId);
+        return this.fileDownloadService.DownloadBlob(rev!.blobId, accessToken.sub);
     }
 
     @Get("meta")
@@ -119,10 +138,11 @@ class _api_
     @Post("meta")
     public async UpdateInFileMetadata(
         @Common fileMetaData: FileMetaData,
-        @Body audioMetadataTags: AudioMetadataTags
+        @Body audioMetadataTags: AudioMetadataTags,
+        @Auth("jwt") accessToken: AccessToken
     )
     {
-        await this.audioMetadataService.CreateRevisionWithNewTags(fileMetaData.id, audioMetadataTags);
+        await this.audioMetadataService.CreateRevisionWithNewTags(fileMetaData.id, audioMetadataTags, accessToken.sub);
     }
 
     @Get("revisions")
@@ -136,10 +156,11 @@ class _api_
     @Get("revisions/blob")
     public RequestFileRevisionBlob(
         @Common file: FileMetaData,
-        @Query blobId: number
+        @Query blobId: number,
+        @Auth("jwt") accessToken: AccessToken
     )
     {
-        return this.fileDownloadService.DownloadBlob(blobId);
+        return this.fileDownloadService.DownloadBlob(blobId, accessToken.sub);
     }
 
     @Post("revisions")
@@ -159,8 +180,6 @@ class _api_
         @Auth("jwt") accessToken: AccessToken
     )
     {
-        this.accessCounterService.Add(accessToken.sub, fileMetaData.id);
-
         const versions = await this.fileVersionsController.QueryVersions(fileMetaData.id);
 
         const options = versions.Values().Filter(x => x.title.startsWith("stream_")).Map(x => ({
@@ -191,16 +210,6 @@ class _api_
         });
     }
 
-    @Put("tags")
-    @Security(OIDC_API_SCHEME, [SCOPE_FILES_WRITE])
-    public async UpdateTags(
-        @Common fileMetaData: FileMetaData,
-        @Body tags: string[]
-    )
-    {
-        await this.tagsController.UpdateFileTags(fileMetaData.id, tags);
-    }
-
     @Get("versions")
     public RequestFileVersions(
         @Common file: FileMetaData
@@ -212,10 +221,11 @@ class _api_
     @Get("versions/blob")
     public RequestFileVersionBlob(
         @Common file: FileMetaData,
-        @Query blobId: number
+        @Query blobId: number,
+        @Auth("jwt") accessToken: AccessToken
     )
     {
-        return this.fileDownloadService.DownloadBlob(blobId);
+        return this.fileDownloadService.DownloadBlob(blobId, accessToken.sub);
     }
 
     @Post("versions")

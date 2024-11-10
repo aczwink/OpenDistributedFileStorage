@@ -21,7 +21,7 @@ import { DBConnectionsManager } from "./DBConnectionsManager";
 
 @Injectable
 export class TagsController
-{    
+{
     constructor(private dbConnMgr: DBConnectionsManager)
     {
     }
@@ -41,12 +41,30 @@ export class TagsController
         return rows.map(x => x.tag as string);
     }
 
+    public async QueryTagId(containerId: number, tag: string)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const row = await conn.SelectOne("SELECT id FROM tags WHERE containerId = ? AND tag = ?", containerId, tag);
+
+        return row?.id as number | undefined;
+    }
+
+    public async SearchTags(containerId: number, substring: string)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const rows = await conn.Select("SELECT tag FROM tags WHERE containerId = ? AND tag LIKE ?", containerId, "%" + substring + "%");
+        return rows.map(row => row.tag as string);
+    }
+
     public async UpdateFileTags(fileId: number, tags: string[])
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         await conn.DeleteRows("files_tags", "fileId = ?", fileId);
 
-        const tagIds = await tags.Values().Map(t => this.QueryOrInsertTag(t)).PromiseAll();
+        const row = await conn.SelectOne("SELECT containerId FROM files WHERE id = ?", fileId);
+        const containerId = row!.containerId;
+
+        const tagIds = await tags.Values().Map(t => this.QueryOrInsertTag(containerId, t)).PromiseAll();
         for (const tagId of tagIds)
         {
             await conn.InsertRow("files_tags", {
@@ -57,16 +75,16 @@ export class TagsController
     }
 
     //Private methods
-    private async QueryOrInsertTag(tag: string)
+    private async QueryOrInsertTag(containerId: number, tag: string)
     {
-        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        const row = await conn.SelectOne("SELECT id FROM tags WHERE tag = ?", tag);
-        if(row === undefined)
+        const tagId = await this.QueryTagId(containerId, tag);
+        if(tagId === undefined)
         {
-            const result = await conn.InsertRow("tags", { tag });
+            const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+            const result = await conn.InsertRow("tags", { containerId, tag });
             return result.insertId;
         }
 
-        return row.id as number;
+        return tagId;
     }
 }

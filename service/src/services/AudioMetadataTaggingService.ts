@@ -42,7 +42,7 @@ export class AudioMetadataTaggingService
     }
 
     //Public methods
-    public async CreateRevisionWithNewTags(fileId: number, audioMetadataTags: AudioMetadataTags)
+    public async CreateRevisionWithNewTags(fileId: number, audioMetadataTags: AudioMetadataTags, userId: string)
     {
         const fileMetaData = await this.filesController.Query(fileId);
         const rev = await this.filesController.QueryNewestRevision(fileId);
@@ -52,7 +52,7 @@ export class AudioMetadataTaggingService
         {
             tmpDir = await fs.promises.mkdtemp("/tmp/oos");
 
-            const blob = await this.fileDownloadService.DownloadBlob(rev!.blobId);
+            const blob = await this.fileDownloadService.DownloadBlob(rev!.blobId, userId);
             const inputPath = path.join(tmpDir, "__input");
             await fs.promises.writeFile(inputPath, blob);
 

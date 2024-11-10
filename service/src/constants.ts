@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
+export const CONST_SERVICE_USER_FAKEID = "__ODFS_SVCUSER__";
 
 export const CONST_FILESEQUENCECACHE_NUMBER_OF_ENTRIES_PER_BLOCK = 1000;
 

@@ -75,7 +75,7 @@ export class FTPFileSystem extends FileSystem
 
         const filesController = GlobalInjector.Resolve(FilesController);
 
-        const children = await filesController.QueryChildrenOf(container!.id, split.pathInContainer);
+        const children = await filesController.QueryDirectChildrenOf(container!.id, split.pathInContainer);
 
         return children.Values().Map(x => this.FileStats(x)).PromiseAll();
     }
@@ -97,7 +97,10 @@ export class FTPFileSystem extends FileSystem
             buffer = await fileDownloadService.DownloadBlobSlice(rev!.blobId, options.start, size! - options.start);
         }
         else
-            buffer = await fileDownloadService.DownloadBlob(rev!.blobId);
+        {
+            throw new Error("TODO: reimplement me");
+            //buffer = await fileDownloadService.DownloadBlob(rev!.blobId);
+        }
 
         return Readable.from(buffer);
     }

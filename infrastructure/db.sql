@@ -271,9 +271,12 @@ DROP TABLE IF EXISTS `tags`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `tags` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `containerId` int(10) unsigned NOT NULL,
   `tag` varchar(200) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `tag` (`tag`)
+  UNIQUE KEY `tag` (`tag`),
+  KEY `tags_containerId` (`containerId`),
+  CONSTRAINT `tags_containerId` FOREIGN KEY (`containerId`) REFERENCES `containers` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -286,4 +289,4 @@ CREATE TABLE `tags` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-10-27 22:30:39
+-- Dump completed on 2024-11-10 22:20:40

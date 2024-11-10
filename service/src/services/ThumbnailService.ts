@@ -25,6 +25,7 @@ import { FileUploadService } from "./FileUploadService";
 import { FileVersionsController } from "../data-access/FileVersionsController";
 import { FFProbe_MediaInfo, FFProbeService } from "./FFProbeService";
 import { BlobsController } from "../data-access/BlobsController";
+import { CONST_SERVICE_USER_FAKEID } from "../constants";
 
 @Injectable
 export class ThumbnailService
@@ -46,7 +47,7 @@ export class ThumbnailService
         {
             tmpDir = await fs.promises.mkdtemp("/tmp/oos");
 
-            const blob = await this.fileDownloadService.DownloadBlob(rev!.blobId);
+            const blob = await this.fileDownloadService.DownloadBlob(rev!.blobId, CONST_SERVICE_USER_FAKEID);
             const inputPath = path.join(tmpDir, "__input");
             await fs.promises.writeFile(inputPath, blob);
 

@@ -16,8 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import "./api/containers";
-import "./api/files";
-import "./api/storage-backends";
-import "./api/stream";
-import "./api/tags";
+import { APIController, Get, Query } from "acts-util-apilib";
+import { TagsController } from "../data-access/TagsController";
+
+@APIController("tags")
+class _api_
+{
+    constructor(private tagsController: TagsController)
+    {
+    }
+    
+    @Get()
+    public async RequestMatching(
+        @Query containerId: number,
+        @Query substring: string
+    )
+    {
+        return await this.tagsController.SearchTags(containerId, substring);
+    }
+}

@@ -15,9 +15,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
+import zlib from "zlib";
 
-import "./api/containers";
-import "./api/files";
-import "./api/storage-backends";
-import "./api/stream";
-import "./api/tags";
+export function Compress(data: string)
+{
+    return new Promise<Buffer>( (resolve, reject) => {
+        zlib.gzip(data, {
+            level: zlib.constants.Z_BEST_COMPRESSION,
+        }, (error, result) => {
+            if(error !== null)
+                reject(error);
+            else
+                resolve(result);
+        });
+    });
+}
+
+export function Decompress(data: Buffer)
+{
+    return new Promise<Buffer>( (resolve, reject) => {
+        zlib.gunzip(data, (error, result) => {
+            if(error !== null)
+                reject(error);
+            else
+                resolve(result);
+        });
+    });
+}

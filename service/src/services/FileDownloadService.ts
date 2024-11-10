@@ -18,17 +18,20 @@
 import { Injectable } from "acts-util-node";
 import { BlobsController, BlobStorageInfoEntry } from "../data-access/BlobsController";
 import { StorageBlocksManager } from "./StorageBlocksManager";
+import { AccessCounterService } from "./AccessCounterService";
 
 @Injectable
 export class FileDownloadService
 {
-    constructor(private blobsController: BlobsController, private storageBackendsManager: StorageBlocksManager)
+    constructor(private blobsController: BlobsController, private storageBackendsManager: StorageBlocksManager, private accessCounterService: AccessCounterService)
     {
     }
 
     //Public methods
-    public async DownloadBlob(blobId: number)
+    public async DownloadBlob(blobId: number, userId: string)
     {
+        this.accessCounterService.AddBlobAccess(userId, blobId);
+
         const entries = await this.blobsController.QueryBlobStorageInfo(blobId);
         const buffers = await entries.Values().Map(this.DownloadPart.bind(this)).PromiseAll();
 
