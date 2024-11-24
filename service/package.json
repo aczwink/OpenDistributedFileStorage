@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "npx acts-util-apilib && npx webpack",
+    "build-docker-image": "docker build -t odfs .",
     "run-dev-server": "nodemon --exec \"npx acts-util-apilib; tsc; node dist/src/main.js\""
   },
   "keywords": [],
@@ -13,6 +15,7 @@
     "@types/amqplib": "^0.10.5",
     "@types/jsonwebtoken": "^9.0.7",
     "nodemon": "^3.1.7",
+    "ts-loader": "^9.5.1",
     "typescript": "^5.6.3"
   },
   "dependencies": {
