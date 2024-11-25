@@ -49,7 +49,7 @@ jobs:
     #build service    
     - name: Build service
       run: |
-        npm link acts-util-apilib acts-util-core
+        npm link acts-util-apilib acts-util-core acts-util-node
         npm install
         npm run build
       working-directory: ./service
