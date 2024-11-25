@@ -47,9 +47,9 @@ jobs:
       working-directory: ./actsutil/apilib
 
     #build service    
-    - name: Build servuce
+    - name: Build service
       run: |
-        npm link acts-util-apilib
+        npm link acts-util-apilib acts-util-core
         npm install
         npm run build
       working-directory: ./service
