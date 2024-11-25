@@ -11,12 +11,55 @@ jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
 
+    permissions:
+      packages: write
+
     steps:
     - uses: actions/checkout@v4
 
-    #build service    
-    - name: Build servuce
+    #setup build tools
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    #build acts-util-core
+    - name: Checkout ACTS-Util repo
+      uses: actions/checkout@v4
+      with:
+        repository: aczwink/ACTS-Util
+        path: actsutil
+
+    - name: Building acts-util-core
       run: |
+        npm install
+        npm run compile
+        npm link
+      working-directory: ./actsutil/core
+
+    #build acts-util-node
+    - name: Building acts-util-node
+      run: |
+        npm link acts-util-core
+        npm install
+        npm run build
+        npm link
+      working-directory: ./actsutil/node
+
+    #build acts-util-apilib
+    - name: Building acts-util-apilib
+      run: |
+        npm link acts-util-core acts-util-node
+        npm install
+        npm run build
+        npm link
+      working-directory: ./actsutil/apilib
+
+    #build service    
+    - name: Build service
+      run: |
+        npm link acts-util-apilib acts-util-core acts-util-node
         npm install
         npm run build
       working-directory: ./service
@@ -29,7 +72,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build and push oidp image
+    - name: Build and push service image
       uses: docker/build-push-action@v4
       with:
         context: ./service
