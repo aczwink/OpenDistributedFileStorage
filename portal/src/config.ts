@@ -25,6 +25,8 @@ export const CONFIG_OIDC: OAuth2Config = {
     flow: "authorizationCode",
     authorizeEndpoint: process.env.OPENOBJECTSTORAGE_AUTH_ENDPOINT!,
     clientId: process.env.OPENOBJECTSTORAGE_CLIENTID!,
+    endSessionEndpoint: process.env.OPENOBJECTSTORAGE_ENDSESSION_ENDPOINT!,
     redirectURI: process.env.OPENOBJECTSTORAGE_REDIRECTURI!,
-    tokenEndpoint: process.env.OPENOBJECTSTORAGE_TOKEN_ENDPOINT!
+    tokenEndpoint: process.env.OPENOBJECTSTORAGE_TOKEN_ENDPOINT!,
+    postLogoutRedirectURI: process.env.OPENOBJECTSTORAGE_POSTLOGOUTREDIRECTURI!
 };

@@ -121,6 +121,24 @@ class _api_
         return this.fileDownloadService.DownloadBlob(rev!.blobId, accessToken.sub);
     }
 
+    @Get("meta-file-manager")
+    public async RequestFileManagerMetaData(
+        @Common fileMetaData: FileMetaData,
+    )
+    {
+        const revs = await this.filesController.QueryRevisions(fileMetaData.id);
+        const newestRev = revs[revs.length - 1];
+        const size = await this.blobsController.QueryBlobSize(newestRev.blobId);
+
+        return {
+            blobId: newestRev.blobId,
+            creationTime: revs[0].creationTimestamp,
+            lastAccessedTime: this.accessCounterService.FetchLastAccessTime(newestRev.blobId),
+            lastModifiedTime: newestRev.creationTimestamp,
+            size: size!,
+        };
+    }
+
     @Get("meta")
     public async RequestInFileMetadata(
         @Common fileMetaData: FileMetaData,
@@ -191,6 +209,9 @@ class _api_
         const rev = await this.filesController.QueryNewestRevision(fileMetaData.id);
         const blobId = rev!.blobId;
 
+        const streamableBlobIds = options.Values().Map(x => x.blobId).ToArray();
+        streamableBlobIds.push(blobId); //the newest revision can always be accepted to be streamed (i.e. binary stream instead of video stream)
+
         const avData = await this.blobsController.QueryMetaData(blobId, "av");
         if((avData !== undefined) && this.ffprobeService.IsStreamable(fileMetaData.mediaType, JSON.parse(avData)))
         {
@@ -201,8 +222,7 @@ class _api_
             });
         }
 
-        const blobIds = options.Values().Map(x => x.blobId).ToArray();
-        const streamingKey = this.streamingService.CreateStreamingKey(accessToken.sub, accessToken.exp, request.ip, blobIds);
+        const streamingKey = this.streamingService.CreateStreamingKey(accessToken.sub, accessToken.exp, request.ip, streamableBlobIds);
 
         return Of<StreamingRequestResultDTO>({
             streamingKey,

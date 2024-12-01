@@ -64,11 +64,6 @@ export class AccessCounterService
 
     public FetchBlobAccessCounts(blobId: number): AccessStatistics
     {
-        const lastAccessTime = (this.latest?.FetchLastAccessTime(blobId)
-            || this.currentYear?.FetchLastAccessTime(blobId)
-            || this.pastYears?.FetchLastAccessTime(blobId)
-        ) ?? 0;
-
         const counts: AccessCounts = {
             nearPast: this.currentYear?.FetchAccessCounts(blobId) ?? 0,
             past: this.pastYears?.FetchAccessCounts(blobId) ?? 0,
@@ -77,7 +72,7 @@ export class AccessCounterService
 
         return {
             ...counts,
-            lastAccessTime,            
+            lastAccessTime: this.FetchLastAccessTime(blobId),
             storageTier: this.ComputeStorageTier(counts)
         };
     }
@@ -93,6 +88,15 @@ export class AccessCounterService
         const c2 = filtered.map(x => this.FetchBlobAccessCounts(x.blobId));
 
         return this.Average(c1.concat(c2));
+    }
+
+    public FetchLastAccessTime(blobId: number)
+    {
+        const lastAccessTime = (this.latest?.FetchLastAccessTime(blobId)
+            || this.currentYear?.FetchLastAccessTime(blobId)
+            || this.pastYears?.FetchLastAccessTime(blobId)
+        ) ?? 0;
+        return lastAccessTime;
     }
 
     //Private methods

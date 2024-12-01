@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { JSX_CreateElement, OAuth2Guard, Routes } from "acfrontend";
+import { JSX_CreateElement, OAuth2Guard, OAuth2LoginRedirectHandler, Routes } from "acfrontend";
 import { ListContainersComponent } from "./containers/ListContainersComponent";
 import { CreateContainersComponent } from "./containers/CreateContainersComponent";
 import { ContainerSelectionComponent } from "./file-explorer/ContainerSelectionComponent";
@@ -64,6 +64,7 @@ const settingsRoutes: Routes = [
 export const routes : Routes = [
     { path: "accessdenied", component: <p>Access denied.</p> },
     { path: "settings", component: <SettingsComponent />, children: settingsRoutes, guards: [ new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_ADMIN] }) ] },
+    { path: "oauth2loggedin", component: <OAuth2LoginRedirectHandler /> },
     { path: "{containerId}", children: containerRoutes, guards: [ new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_FILES_READ] }) ] },
     { path: "", component: <ContainerSelectionComponent />, guards: [ new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_FILES_READ] }) ] }
 ];

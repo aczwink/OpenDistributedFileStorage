@@ -120,7 +120,9 @@ export class BlobsController
         `;
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         const row = await conn.SelectOne(query, blobId);
-        return row?.size as number | undefined;
+        if(row === undefined)
+            return undefined;
+        return parseInt(row.size);
     }
 
     public async QueryBlobStorageInfo(blobId: number)
