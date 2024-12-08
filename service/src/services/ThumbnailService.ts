@@ -72,7 +72,7 @@ export class ThumbnailService
         {
             const isImage = mediaType.startsWith("image/");
 
-            const thumbPaths = isImage ? await this.ComputeImageThumb(mediaFilePath, mediaInfo) : await this.ComputeVideoThumbs(mediaFilePath, mediaInfo);
+            const thumbPaths = isImage ? [await this.ComputeImageThumb(mediaFilePath, mediaInfo)] : await this.ComputeVideoThumbs(mediaFilePath, mediaInfo);
             for (const thumbPath of thumbPaths)
             {
                 const buffer = await fs.promises.readFile(thumbPath);
