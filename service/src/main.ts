@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
-import crypto from "crypto";
 import "dotenv/config";
 import http from "http";
 
@@ -54,9 +53,8 @@ async function DownloadPublicKey()
     });
     
     const string = response.body.toString("utf-8");
-    const parsed = JSON.parse(string);
 
-    return parsed.keys[0];
+    return JSON.parse(string);
 }
 
 async function BootstrapServer()
@@ -66,11 +64,8 @@ async function BootstrapServer()
     requestHandlerChain.AddBodyParser();
 
     const jwtVerifier = new HTTP.JWTVerifier(
-        crypto.createPublicKey({
-            key: await DownloadPublicKey(),
-            format: 'jwk'
-        }),
-        "http://" + CONFIG_OIDP_ENDPOINT, //TODO WHY HTTP AND NOT HTTPS?
+        await DownloadPublicKey(),
+        "https://" + CONFIG_OIDP_ENDPOINT,
         true
     );
     const streamingService = GlobalInjector.Resolve(StreamingService);
