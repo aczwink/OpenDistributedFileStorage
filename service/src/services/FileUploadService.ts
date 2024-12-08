@@ -148,21 +148,28 @@ export class FileUploadService
     {
         const blockId = await this.blobsController.FindBlobBlock(blobBlock.byteLength, sha256sum);
         if(blockId !== undefined)
+        {
+            console.log("found");
             return blockId;
+        }
 
         let newBlockId;
         try
         {
             newBlockId = await this.blobsController.AddBlobBlock(blobBlock.byteLength, sha256sum);
+            console.log("added blob block", newBlockId, blobBlock.byteLength, sha256sum);
         }
         catch(e: any)
         {
+            console.log("error", e);
             if(e?.code === "ER_DUP_ENTRY")
                 return await this.ProcessBlobBlockHashed(blobBlock, sha256sum);
             throw e;
         }
+        console.log("adding", newBlockId);
         const storageBlock = await this.storageBackendsManager.StoreBlobBlock(blobBlock);
         await this.blobsController.AddBlobBlockStorage(newBlockId, storageBlock.id, storageBlock.offset);
+        console.log("added", newBlockId, storageBlock.id, storageBlock.offset);
 
         return newBlockId;
     }

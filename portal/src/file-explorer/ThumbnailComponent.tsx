@@ -94,7 +94,14 @@ export class ThumbnailComponent extends Component<{ fileId: number; mediaType: s
                 throw new Error("TODO: implement me");
 
             versions = response.data;
-            const thumbs = versions.Values().Filter(x => x.title.startsWith("thumb_")).Map(x => {
+            const thumbs = versions.Values().Filter(x => x.title.startsWith("thumb_") || x.title === "thumb").Map(x => {
+                if(x.title === "thumb")
+                {
+                    return {
+                        version: x,
+                        t: 0
+                    };
+                }
                 return {
                     version: x,
                     t: parseInt(x.title.substring("thumb_".length))
