@@ -1,5 +1,5 @@
 /**
- * OpenObjectStorage
+ * OpenDistributedFileStorage
  * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -41,7 +41,7 @@ export class DBConnectionsManager
             host: CONFIG_DB.host,
             user: CONFIG_DB.user,
             password: CONFIG_DB.password,
-            dbName: "openobjectstorage"
+            dbName: "opendistributedfilestorage"
         };
     }
 

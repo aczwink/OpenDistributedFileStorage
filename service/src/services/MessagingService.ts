@@ -1,5 +1,5 @@
 /**
- * OpenObjectStorage
+ * OpenDistributedFileStorage
  * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -28,7 +28,7 @@ export class MessagingService
         amqp.connect({
             hostname: "localhost",
             protocol: "amqp",
-            vhost: "OpenObjectStorage",
+            vhost: "OpenDistributedFileStorage",
         }, (error0, connection) =>
         {
             if (error0)

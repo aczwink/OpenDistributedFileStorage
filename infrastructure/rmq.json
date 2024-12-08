@@ -2,7 +2,7 @@
     "rabbit_version": "4.0.2",
     "vhosts": [
         {
-            "name": "OpenObjectStorage",
+            "name": "OpenDistributedFileStorage",
             "description": "",
             "tags": [],
             "default_queue_type": "classic",
@@ -16,7 +16,7 @@
     "queues": [
         {
             "name": "job-queue",
-            "vhost": "OpenObjectStorage",
+            "vhost": "OpenDistributedFileStorage",
             "durable": true,
             "auto_delete": false,
             "arguments": {
@@ -27,7 +27,7 @@
     "exchanges": [
         {
             "name": "job-exchange",
-            "vhost": "OpenObjectStorage",
+            "vhost": "OpenDistributedFileStorage",
             "type": "fanout",
             "durable": true,
             "auto_delete": false,
@@ -38,7 +38,7 @@
     "bindings": [
         {
             "source": "job-exchange",
-            "vhost": "OpenObjectStorage",
+            "vhost": "OpenDistributedFileStorage",
             "destination": "job-queue",
             "destination_type": "queue",
             "routing_key": "",

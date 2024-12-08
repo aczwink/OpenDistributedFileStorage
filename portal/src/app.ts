@@ -1,5 +1,5 @@
 /**
- * OpenObjectStorage
+ * OpenDistributedFileStorage
  * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -23,6 +23,6 @@ BootstrapApp({
     mountPoint: document.body,
     rootComponentClass: RootComponent,
     routes: routes,
-    title: "OpenObjectStorage",
+    title: "OpenDistributedFileStorage",
     version: "0.1 beta"
 });

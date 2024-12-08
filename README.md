@@ -1,2 +1,2 @@
-# OpenObjectStorage
-A web-based object storage
+# OpenDistributedFileStorage
+A web-based file storage service with distributed storage targets
