@@ -18,8 +18,11 @@
 
 import { OAuth2Config } from "acfrontend";
 
-export const CONFIG_BACKEND = process.env.ODFS_BACKEND!;
-export const CONFIG_BACKENDPORT = parseInt(process.env.ODFS_BACKEND_PORT!);
+export const CONFIG_BACKEND = {
+    host: process.env.ODFS_BACKEND_HOST!,
+    port: parseInt(process.env.ODFS_BACKEND_PORT!),
+    protocol: process.env.ODFS_BACKEND_PROTOCOL! as "http" | "https",
+};
 
 export const CONFIG_OIDC: OAuth2Config = {
     flow: "authorizationCode",

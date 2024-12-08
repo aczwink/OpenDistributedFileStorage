@@ -17,7 +17,7 @@
  * */
 import { API } from "../dist/api";
 import { APIServiceBase, HTTPService, Injectable, OAuth2TokenManager } from "acfrontend";
-import { CONFIG_BACKEND, CONFIG_BACKENDPORT, CONFIG_OIDC } from "./config";
+import { CONFIG_BACKEND, CONFIG_OIDC } from "./config";
 import { SCOPE_FILES_WRITE } from "./definitions";
 
 @Injectable
@@ -27,7 +27,7 @@ export class APIService extends API
     {
         super( req => this.base.SendRequest(req) );
 
-        this.base = new APIServiceBase(httpService, CONFIG_BACKEND, CONFIG_BACKENDPORT, "http");
+        this.base = new APIServiceBase(httpService, CONFIG_BACKEND.host, CONFIG_BACKEND.port, CONFIG_BACKEND.protocol);
 
         oAuth2TokenManager.tokenIssued.Subscribe(x => this.accessToken = x.accessToken);
     }

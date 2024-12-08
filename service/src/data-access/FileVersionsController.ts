@@ -27,7 +27,7 @@ interface FileVersion
 
 @Injectable
 export class FileVersionsController
-{    
+{
     constructor(private dbConnMgr: DBConnectionsManager)
     {
     }
@@ -41,6 +41,18 @@ export class FileVersionsController
             blobId,
             title
         });
+    }
+
+    public async ClearByPrefix(fileId: number, titlePrefix: string)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        await conn.DeleteRows("files_versions", "fileId = ? AND title LIKE ?", fileId, titlePrefix + "%");
+    }
+
+    public async Delete(fileId: number, title: string)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        await conn.DeleteRows("files_versions", "fileId = ? AND title = ?", fileId, title);
     }
 
     public async QueryVersions(fileId: number)

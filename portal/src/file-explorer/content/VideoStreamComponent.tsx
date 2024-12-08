@@ -19,7 +19,7 @@
 import { Component, FormField, Injectable, JSX_CreateElement, JSX_Fragment, ProgressSpinner, RouteParamProperty, Select } from "acfrontend";
 import { APIService } from "../../APIService";
 import { StreamingRequestResultDTO } from "../../../dist/api";
-import { CONFIG_BACKEND, CONFIG_BACKENDPORT } from "../../config";
+import { CONFIG_BACKEND } from "../../config";
 
 @Injectable
 export class VideoStreamComponent extends Component
@@ -37,6 +37,8 @@ export class VideoStreamComponent extends Component
     {
         if(this.data === null)
             return <ProgressSpinner />;
+        if(this.data.options.length === 0)
+            return "This video can't be viewed!";
 
         const sel = this.data.options[this.selectedIndex];
         return <>
@@ -55,7 +57,7 @@ export class VideoStreamComponent extends Component
     private GetSelectedVideoURL()
     {
         const sel = this.data!.options[this.selectedIndex];
-        return `http://${CONFIG_BACKEND}:${CONFIG_BACKENDPORT}/stream?blobId=${sel.blobId}&streamingKey=${this.data!.streamingKey}`;
+        return `${CONFIG_BACKEND.protocol}://${CONFIG_BACKEND.host}:${CONFIG_BACKEND.port}/stream?blobId=${sel.blobId}&streamingKey=${this.data!.streamingKey}`;
     }
 
     private async LoadPoster()

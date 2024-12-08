@@ -65,6 +65,9 @@ export class ThumbnailService
         const mediaInfo = await this.ffProbeService.AnalyzeMediaFile(mediaFilePath);
         await this.blobsController.WriteMetaData(blobId, "av", JSON.stringify(mediaInfo));
 
+        await this.fileVersionsController.ClearByPrefix(fileId, "thumb_");
+        await this.fileVersionsController.Delete(fileId, "preview");
+
         if(!mediaType.startsWith("audio/"))
         {
             const isImage = mediaType.startsWith("image/");

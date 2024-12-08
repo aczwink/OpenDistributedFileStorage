@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "generate-api": "npx acts-util-apilib",
-    "start-dev": "webpack serve --open"
+    "start-dev": "webpack serve --open",
+    "build": "npx webpack --config webpack.config.production.js && (cd dist && ln -s ../static static && zip -j -r -9 odfs-portal-release.zip bundle.js static env.js && rm static)"
   },
   "keywords": [],
   "author": "Amir Czwink",
