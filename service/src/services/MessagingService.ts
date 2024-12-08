@@ -19,6 +19,7 @@
 import amqp from 'amqplib/callback_api';
 
 import { Injectable } from "acts-util-node";
+import { CONFIG_RMQ } from '../env';
 
 @Injectable
 export class MessagingService
@@ -26,7 +27,7 @@ export class MessagingService
     constructor()
     {
         amqp.connect({
-            hostname: "localhost",
+            hostname: CONFIG_RMQ.host,
             protocol: "amqp",
             vhost: "OpenDistributedFileStorage",
         }, (error0, connection) =>

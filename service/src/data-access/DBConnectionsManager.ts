@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 import { DBConnectionPool, DBFactory, DBResource, Injectable } from "acts-util-node";
-import { CONFIG_DB } from "../config";
+import { CONFIG_DB } from "../env";
 
 @Injectable
 export class DBConnectionsManager

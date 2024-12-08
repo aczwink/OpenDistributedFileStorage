@@ -25,3 +25,7 @@ export const CONFIG_DB = {
 export const CONFIG_OIDP_ENDPOINT = process.env.ODFS_OIDP_ENDPOINT!;
 export const CONFIG_ORIGIN = process.env.ODFS_ORIGIN!;
 export const CONFIG_PORT = process.env.ODFS_PORT;
+
+export const CONFIG_RMQ = {
+    host: process.env.ODFS_RMQHOST!,
+};

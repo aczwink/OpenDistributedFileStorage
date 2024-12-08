@@ -22,7 +22,7 @@ import { AbsURL, OpenAPI } from "acts-util-core";
 import { Factory, GlobalInjector, HTTP } from "acts-util-node";
 import { APIRegistry } from "acts-util-apilib";
 import { DBConnectionsManager } from "./data-access/DBConnectionsManager";
-import { CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT } from "./config";
+import { CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT } from "./env";
 import { FtpSrv, GeneralError } from "ftp-srv";
 import { FTPFileSystem } from "./FTPFileSystem";
 import { StorageBackendsManager } from "./services/StorageBackendsManager";
