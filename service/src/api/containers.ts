@@ -133,10 +133,11 @@ class _api3_
     @Security(OIDC_API_SCHEME, [SCOPE_FILES_WRITE])
     public async Create(
         @Path containerId: number,
+        @FormField parentPath: string,
         @FormField file: UploadedFile
     )
     {
-        const result = await this.fileUploadService.Upload(containerId, file.originalName, file.mediaType, file.buffer);
+        const result = await this.fileUploadService.Upload(containerId, parentPath, file.originalName, file.mediaType, file.buffer);
         if(result === "error_file_exists")
             return Conflict("file exists already");
         return result;

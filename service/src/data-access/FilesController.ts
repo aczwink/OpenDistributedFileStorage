@@ -45,12 +45,12 @@ export class FilesController
     }
 
     //Public methods
-    public async AddFile(containerId: number, originalName: string, mediaType: string)
+    public async AddFile(containerId: number, filePath: string, mediaType: string)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         const result = await conn.InsertRow("files", {
             containerId,
-            filePath: "/" + originalName,
+            filePath,
             mediaType,
         });
 

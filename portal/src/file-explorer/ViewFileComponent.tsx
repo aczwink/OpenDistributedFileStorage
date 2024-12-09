@@ -19,6 +19,8 @@
 import { Injectable, Component, RouteParamProperty, ProgressSpinner, JSX_CreateElement, JSX_Fragment, BootstrapIcon, Anchor, FileDownloadService, NavItem, RouterComponent, InfoMessageManager } from "acfrontend";
 import { APIService } from "../APIService";
 import { FileMetaDataDTO } from "../../dist/api";
+import { FileEventsService } from "../FileEventsService";
+import { Subscription } from "acts-util-core";
 
 let dragCounter = 0;
 
@@ -28,6 +30,7 @@ export class ViewFileComponent extends Component
     constructor(private apiService: APIService, private fileDownloadService: FileDownloadService, private infoMessageManager: InfoMessageManager,
         @RouteParamProperty("containerId") private containerId: number,
         @RouteParamProperty("fileId") private fileId: number,
+        private fileEventsService: FileEventsService
     )
     {
         super();
@@ -225,9 +228,19 @@ export class ViewFileComponent extends Component
             throw new Error("TODO: implement me");
         this.containerName = response.data.name;
         this.LoadData();
+
+        this.subscription = this.fileEventsService.onChanged.Subscribe({
+            next: () => this.LoadData()
+        });
+    }
+
+    override OnUnmounted(): void
+    {
+        this.subscription?.Unsubscribe();
     }
 
     //State
     private data: FileMetaDataDTO | null;
     private containerName: string;
+    private subscription?: Subscription;
 }

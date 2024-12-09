@@ -168,9 +168,10 @@ export class ThumbnailService
         const scale = isWidthBigger ? "256:-1" : "-1:256";
 
         const imgThumbPaths = [];
+        const digitCount = Math.ceil(duration).toString().length;
         for (const segment of segments)
         {
-            const thumbPath = await this.CreateImageThumbnail(mediaFilePath, scale, segment);
+            const thumbPath = await this.CreateImageThumbnail(mediaFilePath, scale, { seekPos: segment, digitCount });
             imgThumbPaths.push(thumbPath);
         }
 
@@ -188,14 +189,21 @@ export class ThumbnailService
         ];
     }
 
-    private async CreateImageThumbnail(inputPath: string, scale: string, seekTo?: number)
+    private async CreateImageThumbnail(inputPath: string, scale: string, seek?: { seekPos: number, digitCount: number })
     {
         const dirPath = path.dirname(inputPath);
-        const outPath = path.join(dirPath, (seekTo === undefined) ? "thumb.jpg" : ("thumb_" + Math.round(seekTo) + ".jpg"));
-        const seekParams = (seekTo === undefined) ? [] : [ "-ss", seekTo.toString()];
+        const outPath = path.join(dirPath, (seek === undefined) ? "thumb.jpg" : ("thumb_" + this.PadZeros(Math.round(seek.seekPos).toString(), seek.digitCount) + ".jpg"));
+        const seekParams = (seek === undefined) ? [] : [ "-ss", seek?.seekPos.toString()];
         await this.commandExecutor.Execute(["ffmpeg", ...seekParams, "-i", inputPath, "-vf", "scale=" + scale, "-frames:v", "1", outPath]);
 
         return outPath;
+    }
+
+    private PadZeros(value: string, length: number): string
+    {
+        if(value.length < length)
+            return this.PadZeros("0" + value, length);
+        return value;
     }
 
     private SplitIntoSegmentsByCount(duration: number, segmentsCount: number)

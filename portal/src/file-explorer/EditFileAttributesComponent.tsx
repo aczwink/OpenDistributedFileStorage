@@ -19,6 +19,7 @@
 import { AutoCompleteTextLineEdit, BootstrapIcon, FormField, JSX_CreateElement, LineEdit, PushButton, Router, Use, UseAPI, UseDeferredAPI, UseRouteParameter, UseState } from "acfrontend";
 import { APIService } from "../APIService";
 import { FileMetaDataDTO } from "../../dist/api";
+import { FileEventsService } from "../FileEventsService";
 
 async function LoadTags(containerId: number, searchText: string)
 {
@@ -54,7 +55,10 @@ function FileEditor(input: { containerId: number; fileId: number; fileData: File
             filePath: state.filePath,
             tags: state.tags
         }),
-        () => Use(Router).RouteTo("/" + input.containerId + "/" + input.fileId)
+        () => {
+            Use(FileEventsService).onChanged.Next();
+            Use(Router).RouteTo("/" + input.containerId + "/" + input.fileId);
+        }
     );
     if(apiState.started)
         return apiState.fallback;

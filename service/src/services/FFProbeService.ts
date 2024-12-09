@@ -93,7 +93,15 @@ export class FFProbeService
         switch(stream.codec_type)
         {
             case "audio":
-                return stream.codec_name === "mp3";
+            {
+                switch(stream.codec_name)
+                {
+                    case "aac":
+                    case "mp3":
+                        return true;
+                }
+                return false;
+            }
             case "video":
                 return stream.codec_name === "h264";
         }

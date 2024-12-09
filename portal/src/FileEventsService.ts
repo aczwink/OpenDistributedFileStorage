@@ -16,17 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-export const CONFIG_DB = {
-    host: process.env.ODFS_DBHOST!,
-    user: process.env.ODFS_DBUSER!,
-    password: process.env.ODFS_DBPW!,
-};
+import { Injectable } from "acfrontend";
+import { Subject } from "acts-util-core";
 
-export const CONFIG_MAX_NUMBER_OF_CACHED_BLOCKS = parseInt(process.env.ODFS_MAX_CACHE_SIZE!); //in units of 100 MiB
-export const CONFIG_OIDP_ENDPOINT = process.env.ODFS_OIDP_ENDPOINT!;
-export const CONFIG_ORIGIN = process.env.ODFS_ORIGIN!;
-export const CONFIG_PORT = process.env.ODFS_PORT;
-
-export const CONFIG_RMQ = {
-    host: process.env.ODFS_RMQHOST!,
-};
+@Injectable
+export class FileEventsService
+{
+    constructor()
+    {
+        this.onChanged = new Subject();
+    }
+    
+    public onChanged: Subject<void>;
+}

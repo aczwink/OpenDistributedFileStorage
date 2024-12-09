@@ -31,6 +31,7 @@ export class FileExplorerComponent extends Component
         super();
 
         this.loading = false;
+        this.dirPath = "/";
     }
 
     protected Render(): RenderValue
@@ -39,18 +40,30 @@ export class FileExplorerComponent extends Component
             return <ProgressSpinner />;
 
         if(this.apiService.readOnly)
-            return <DirectoryViewComponent />;
+            return <DirectoryViewComponent dirPath={this.dirPath} />;
         return <div ondragenter={this.OnDragEnter.bind(this)} ondragleave={this.OnDragLeave.bind(this)} ondragover={this.OnDragOver.bind(this)} ondrop={this.OnDrop.bind(this)} style="min-height: 95vh">
-            <DirectoryViewComponent />
+            <DirectoryViewComponent dirPath={this.dirPath} />
         </div>;
     }
 
     //Private methods
+    private ExtractDirPath()
+    {
+        const dirPath = this.router.state.Get().queryParams.dirPath;
+        if(dirPath !== undefined)
+            this.dirPath = decodeURIComponent(dirPath);
+        else
+            this.dirPath = "/";
+    }
+
     private async UploadFile(file: File)
     {
+        console.log("Uploading file", file.name);
         const response = await this.apiService.containers._any_.files.post(this.containerId, {
+            parentPath: this.dirPath,
             file
         });
+        console.log("Finished", file.name, "result: ", response);
         switch(response.statusCode)
         {
             case 200:
@@ -150,6 +163,13 @@ export class FileExplorerComponent extends Component
         await this.UploadFiles(files);
     }
 
+    override OnInitiated(): void
+    {
+        this.ExtractDirPath();
+        this.router.state.Subscribe(this.ExtractDirPath.bind(this));
+    }
+
     //State
+    private dirPath: string;
     private loading: boolean;
 }

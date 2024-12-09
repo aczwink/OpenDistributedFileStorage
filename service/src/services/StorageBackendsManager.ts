@@ -25,6 +25,7 @@ import { Dictionary, ObjectExtensions } from "acts-util-core";
 import { StorageBlocksController } from "../data-access/StorageBlocksController";
 import { CONST_STORAGEBLOCKS_MAX_REPLICATION, StorageTier } from "../constants";
 import { WebDAVBackend } from "../storage-backends/WebDAVBackend";
+import { LockedStorageBackend } from "../storage-backends/LockedStorageBackend";
 
 export interface StorageBackendCreationData
 {
@@ -100,6 +101,11 @@ export class StorageBackendsManager
 
     //Private methods
     private CreateBackendInstance(config: StorageBackendConfig): StorageBackend
+    {
+        return new LockedStorageBackend(this.CreateRealBackendInstance(config));
+    }
+
+    private CreateRealBackendInstance(config: StorageBackendConfig): StorageBackend
     {
         switch(config.type)
         {

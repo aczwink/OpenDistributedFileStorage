@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 import crypto from "crypto";
+import path from "path";
 import { Readable } from 'stream';
 import { Injectable } from "acts-util-node";
 import { BlobsController } from "../data-access/BlobsController";
@@ -34,13 +35,14 @@ export class FileUploadService
     }
 
     //Public methods
-    public async Upload(containerId: number, originalName: string, mediaType: string, buffer: Buffer)
+    public async Upload(containerId: number, parentPath: string, originalName: string, mediaType: string, buffer: Buffer)
     {
         const blobId = await this.ProcessBlob(Readable.from(buffer));
         let fileId;
         try
         {
-            fileId = await this.filesController.AddFile(containerId, originalName, mediaType);
+            const filePath = path.join(parentPath, originalName);
+            fileId = await this.filesController.AddFile(containerId, filePath, mediaType);
         }
         catch(e: any)
         {
@@ -148,28 +150,21 @@ export class FileUploadService
     {
         const blockId = await this.blobsController.FindBlobBlock(blobBlock.byteLength, sha256sum);
         if(blockId !== undefined)
-        {
-            console.log("found");
             return blockId;
-        }
 
         let newBlockId;
         try
         {
             newBlockId = await this.blobsController.AddBlobBlock(blobBlock.byteLength, sha256sum);
-            console.log("added blob block", newBlockId, blobBlock.byteLength, sha256sum);
         }
         catch(e: any)
         {
-            console.log("error", e);
             if(e?.code === "ER_DUP_ENTRY")
                 return await this.ProcessBlobBlockHashed(blobBlock, sha256sum);
             throw e;
         }
-        console.log("adding", newBlockId);
         const storageBlock = await this.storageBackendsManager.StoreBlobBlock(blobBlock);
         await this.blobsController.AddBlobBlockStorage(newBlockId, storageBlock.id, storageBlock.offset);
-        console.log("added", newBlockId, storageBlock.id, storageBlock.offset);
 
         return newBlockId;
     }

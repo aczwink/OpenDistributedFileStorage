@@ -16,21 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { Anchor, AutoCompleteMultiSelectBox, BootstrapIcon, Component, FormField, Injectable, JSX_CreateElement, JSX_Fragment, LineEdit, ProgressSpinner, RouteParamProperty, Router } from "acfrontend";
+import { Anchor, AutoCompleteMultiSelectBox, BootstrapIcon, Component, FormField, Injectable, JSX_CreateElement, JSX_Fragment, LineEdit, ProgressSpinner, RouteParamProperty } from "acfrontend";
 import { APIService } from "../APIService";
 import { DirectoryContentsDTO } from "../../dist/api";
 import { FilesGridView } from "./FilesGridView";
 import { FilesTableView } from "./FilesTableView";
 
 @Injectable
-export class DirectoryViewComponent extends Component
+export class DirectoryViewComponent extends Component<{ dirPath: string }>
 {
-    constructor(private apiService: APIService, @RouteParamProperty("containerId") private containerId: number, private router: Router)
+    constructor(private apiService: APIService, @RouteParamProperty("containerId") private containerId: number)
     {
         super();
 
         this.containerName = "";
-        this.dirPath = "/";
         this.data = null;
         this.view = "grid";
         this.showSearch = false;
@@ -62,17 +61,6 @@ export class DirectoryViewComponent extends Component
     }
 
     //Private methods
-    private ExtractDirPath()
-    {
-        const dirPath = this.router.state.Get().queryParams.dirPath;
-        if(dirPath !== undefined)
-            this.dirPath = decodeURIComponent(dirPath);
-        else
-            this.dirPath = "/";
-
-        this.LoadData();
-    }
-
     private GetToggleButtonClassName(condition: boolean)
     {
         const className = condition ? "btn-primary btn-active" : "text-primary";
@@ -82,7 +70,7 @@ export class DirectoryViewComponent extends Component
     private async LoadData()
     {
         this.data = null;
-        const response = await this.apiService.containers._any_.files.get(this.containerId, { dirPath: this.dirPath });
+        const response = await this.apiService.containers._any_.files.get(this.containerId, { dirPath: this.input.dirPath });
         if(response.statusCode !== 200)
             throw new Error("TODO: implement me");
         this.data = response.data;
@@ -94,8 +82,8 @@ export class DirectoryViewComponent extends Component
             return <ProgressSpinner />;
 
         if(this.view === "grid")
-            return <FilesGridView containerId={this.containerId} contents={this.data} parentPath={this.dirPath} />;
-        return <FilesTableView containerId={this.containerId} contents={this.data} parentPath={this.dirPath} />;
+            return <FilesGridView containerId={this.containerId} contents={this.data} parentPath={this.input.dirPath} />;
+        return <FilesTableView containerId={this.containerId} contents={this.data} parentPath={this.input.dirPath} />;
     }
 
     private RenderNav()
@@ -105,9 +93,9 @@ export class DirectoryViewComponent extends Component
             return "/" + dirs.slice(0, idx + 1).join("/");
         }
 
-        if(this.dirPath === "/")
+        if(this.input.dirPath === "/")
             return <li className="breadcrumb-item active">{this.containerName}</li>;
-        const dirs = this.dirPath.substring(1).split("/");
+        const dirs = this.input.dirPath.substring(1).split("/");
         const last = dirs.pop();
         return <>
             <li className="breadcrumb-item"><Anchor route={"/" + this.containerId}>{this.containerName}</Anchor></li>
@@ -157,8 +145,12 @@ export class DirectoryViewComponent extends Component
         const response = await this.apiService.containers.get();
         this.containerName = response.data.find(x => x.id === this.containerId)!.name;
 
-        this.ExtractDirPath();
-        this.router.state.Subscribe(this.ExtractDirPath.bind(this));
+        this.LoadData();
+    }
+
+    override OnInputChanged(): void
+    {
+        this.LoadData();
     }
 
     private async OnLoadTags(searchText: string)
@@ -176,7 +168,7 @@ export class DirectoryViewComponent extends Component
 
         this.data = null;
         const response = await this.apiService.containers._any_.search.get(this.containerId, {
-            dirPath: this.dirPath,
+            dirPath: this.input.dirPath,
             nameFilter: this.searchFilterName,
             mediaTypeFilter: this.searchFilterMediaType,
             requiredTags: this.searchTags.join(",")
@@ -197,7 +189,6 @@ export class DirectoryViewComponent extends Component
 
     //State
     private containerName: string;
-    private dirPath: string;
     private data: DirectoryContentsDTO | null;
     private view: "grid" | "list";
     private showSearch: boolean;

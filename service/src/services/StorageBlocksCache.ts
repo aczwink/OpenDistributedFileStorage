@@ -18,14 +18,13 @@
 
 import { Dictionary, ObjectExtensions } from "acts-util-core";
 import { Injectable } from "acts-util-node";
+import { CONFIG_MAX_NUMBER_OF_CACHED_BLOCKS } from "../env";
 
 interface CachedEntry
 {
     buffer: Buffer;
     lastAccess: number;
 }
-
-const maxBlocksInCache = 100; //TODO: make this configurable
 
 /**
  * This is a read-only cache. It is never written to.
@@ -65,7 +64,7 @@ export class StorageBlocksCache
     //Private methods
     private PruneCacheIfFull()
     {
-        const pruneCount = ObjectExtensions.OwnKeys(this.decryptedStorageBlocks).Count() - maxBlocksInCache;
+        const pruneCount = ObjectExtensions.OwnKeys(this.decryptedStorageBlocks).Count() - CONFIG_MAX_NUMBER_OF_CACHED_BLOCKS;
         if(pruneCount <= 0)
             return;
         const toPrune = ObjectExtensions.Entries(this.decryptedStorageBlocks).OrderBy(kv => kv.value!.lastAccess).Map(kv => kv.key).Take(pruneCount);
