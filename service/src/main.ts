@@ -22,7 +22,7 @@ import { AbsURL, OpenAPI } from "acts-util-core";
 import { Factory, GlobalInjector, HTTP } from "acts-util-node";
 import { APIRegistry } from "acts-util-apilib";
 import { DBConnectionsManager } from "./data-access/DBConnectionsManager";
-import { CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT } from "./env";
+import { CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT, CONFIG_UPLOADDIR } from "./env";
 import { FtpSrv, GeneralError } from "ftp-srv";
 import { FTPFileSystem } from "./FTPFileSystem";
 import { StorageBackendsManager } from "./services/StorageBackendsManager";
@@ -33,6 +33,7 @@ import { ThumbnailService } from "./services/ThumbnailService";
 import { StreamingService } from "./services/StreamingService";
 import { AccessCounterService } from "./services/AccessCounterService";
 import { StorageBlocksManager } from "./services/StorageBlocksManager";
+import { FileUploadService } from "./services/FileUploadService";
 
 async function DownloadPublicKey()
 {
@@ -59,7 +60,7 @@ async function DownloadPublicKey()
 
 async function BootstrapServer()
 {
-    const requestHandlerChain = Factory.CreateRequestHandlerChain();
+    const requestHandlerChain = Factory.CreateRequestHandlerChain(CONFIG_UPLOADDIR);
     requestHandlerChain.AddCORSHandler([CONFIG_ORIGIN]);
     requestHandlerChain.AddBodyParser();
 
@@ -103,6 +104,9 @@ async function BootstrapServer()
                 break;
             case "replicate":
                 await GlobalInjector.Resolve(StorageBlocksManager).Replicate(job.storageBlockId);
+                break;
+            case "upload-file":
+                await GlobalInjector.Resolve(FileUploadService).UploadFileFromDisk(job.containerId, job.containerPath, job.mediaType, job.uploadPath, job.fileId);
                 break;
         }
     };

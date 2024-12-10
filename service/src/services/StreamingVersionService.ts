@@ -103,8 +103,7 @@ export class StreamingVersionService
         ];
         await this.commandExecutor.Execute(command);
 
-        const buffer = await fs.promises.readFile(targetPath);
-        const blobId = await this.fileUploadService.UploadBlob(buffer);
+        const blobId = await this.fileUploadService.UploadBlobFromDisk(targetPath);
         await this.fileVersionsController.AddVersion(fileId, blobId, "stream_" + targetType);
     }
 }

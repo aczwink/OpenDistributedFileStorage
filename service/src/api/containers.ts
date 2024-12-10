@@ -19,7 +19,7 @@
 import { APIController, Auth, Body, Common, Conflict, Forbidden, FormField, Get, NotFound, Path, Post, Query, Security } from "acts-util-apilib";
 import { AccessToken, OIDC_API_SCHEME, SCOPE_ADMIN, SCOPE_FILES_WRITE } from "../api_security";
 import { ContainerProperties, ContainersController } from "../data-access/ContainersController";
-import { UploadedFile } from "acts-util-node/dist/http/UploadedFile";
+import { HTTP } from "acts-util-node";
 import { FileUploadService } from "../services/FileUploadService";
 import { FileOverviewData, FilesController } from "../data-access/FilesController";
 import { TagsController } from "../data-access/TagsController";
@@ -134,10 +134,10 @@ class _api3_
     public async Create(
         @Path containerId: number,
         @FormField parentPath: string,
-        @FormField file: UploadedFile
+        @FormField file: HTTP.UploadedFileRef
     )
     {
-        const result = await this.fileUploadService.Upload(containerId, parentPath, file.originalName, file.mediaType, file.buffer);
+        const result = await this.fileUploadService.CreateUploadJob(containerId, parentPath, file.originalName, file.mediaType, file.filePath);
         if(result === "error_file_exists")
             return Conflict("file exists already");
         return result;

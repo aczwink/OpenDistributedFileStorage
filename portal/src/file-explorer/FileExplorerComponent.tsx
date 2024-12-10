@@ -66,14 +66,16 @@ export class FileExplorerComponent extends Component
         console.log("Finished", file.name, "result: ", response);
         switch(response.statusCode)
         {
-            case 200:
-                return response.data;
+            case 204:
+                return true;
             case 409:
                 this.infoMessageManager.ShowMessage(<p>{file.name} was not uploaded because it exists already!</p>, { type: "warning" });
                 break;
             default:
                 this.infoMessageManager.ShowMessage(<p>Failed uploading file {file.name}</p>, { type: "danger" });
         }
+
+        return false;
     }
 
     private async UploadFiles(files: File[])
@@ -83,23 +85,23 @@ export class FileExplorerComponent extends Component
         if(files.length === 1)
         {
             const result = await this.UploadFile(files[0]);
-            if(result !== undefined)
-                this.router.RouteTo("/" + this.containerId + "/" + result);
+            if(result)
+                this.infoMessageManager.ShowMessage(<p>File uploaded successfully. You will see it soon in the explorer...</p>, { type: "success" });
         }
         else
         {
-            const fileIds = [];
+            let okCount = 0;
             for (const file of files)
             {
                 const result = await this.UploadFile(file);    
-                if(result !== undefined)
-                    fileIds.push(result);
+                if(result)
+                    okCount++;
             }
 
-            if(fileIds.length === files.length)
-                this.infoMessageManager.ShowMessage(<p>{fileIds.length} files uploaded successfully.</p>, { type: "success" });
+            if(okCount === files.length)
+                this.infoMessageManager.ShowMessage(<p>{okCount} files uploaded successfully. You will see them soon in the explorer...</p>, { type: "success" });
             else
-                this.infoMessageManager.ShowMessage(<p>{files.length - fileIds.length} files of {files.length} could not be uploaded successfully.</p>, { type: "danger" });
+                this.infoMessageManager.ShowMessage(<p>{files.length - okCount} files of {files.length} could not be uploaded successfully.</p>, { type: "danger" });
         }
 
         this.loading = false;

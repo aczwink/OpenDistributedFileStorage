@@ -30,10 +30,20 @@ interface ComputeThumbs
     fileId: number;
 }
 
+interface FileUploadJob
+{
+    type: "upload-file";
+    containerId: number;
+    containerPath: string;
+    fileId?: number;
+    mediaType: string;
+    uploadPath: string;
+}
+
 interface ReplicationJob
 {
     type: "replicate";
     storageBlockId: number;
 }
 
-export type BackgroundJob = ComputeStreamingVersion | ComputeThumbs | ReplicationJob;
+export type BackgroundJob = ComputeStreamingVersion | ComputeThumbs | FileUploadJob | ReplicationJob;

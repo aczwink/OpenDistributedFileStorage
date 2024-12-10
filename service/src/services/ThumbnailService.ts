@@ -75,8 +75,7 @@ export class ThumbnailService
             const thumbPaths = isImage ? [await this.ComputeImageThumb(mediaFilePath, mediaInfo)] : await this.ComputeVideoThumbs(mediaFilePath, mediaInfo);
             for (const thumbPath of thumbPaths)
             {
-                const buffer = await fs.promises.readFile(thumbPath);
-                const blobId = await this.fileUploadService.UploadBlob(buffer);
+                const blobId = await this.fileUploadService.UploadBlobFromDisk(thumbPath);
 
                 const parsed = path.parse(thumbPath);
                 await this.fileVersionsController.AddVersion(fileId, blobId, parsed.name);

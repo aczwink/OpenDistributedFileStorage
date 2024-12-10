@@ -30,3 +30,6 @@ export const CONFIG_PORT = process.env.ODFS_PORT;
 export const CONFIG_RMQ = {
     host: process.env.ODFS_RMQHOST!,
 };
+
+export const CONFIG_ROOTDIR = "/srv/OpenDistributedFileStorage";
+export const CONFIG_UPLOADDIR = CONFIG_ROOTDIR + "/incoming";

@@ -22,7 +22,6 @@ import { ContainersController } from "../data-access/ContainersController";
 import { FileMetaData, FilesController } from "../data-access/FilesController";
 import { FileDownloadService } from "../services/FileDownloadService";
 import { FileUploadService } from "../services/FileUploadService";
-import { UploadedFile } from "acts-util-node/dist/http/UploadedFile";
 import { Of } from "acts-util-core";
 import { TagsController } from "../data-access/TagsController";
 import { FileVersionsController } from "../data-access/FileVersionsController";
@@ -185,10 +184,10 @@ class _api_
     @Security(OIDC_API_SCHEME, [SCOPE_FILES_WRITE])
     public async UploadFileRevision(
         @Common fileMetaData: FileMetaData,
-        @FormField file: UploadedFile
+        @FormField file: HTTP.UploadedFileRef
     )
     {
-        await this.fileUploadService.UploadRevision(fileMetaData.id, file.buffer);
+        await this.fileUploadService.CreateUploadRevisionJob(fileMetaData.id, file.filePath);
     }
 
     @Post("stream")

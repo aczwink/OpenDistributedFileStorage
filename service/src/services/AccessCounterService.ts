@@ -22,8 +22,9 @@ import { YearCache } from "../access-cache/YearCache";
 import { FileVersionsController } from "../data-access/FileVersionsController";
 import { FilesController } from "../data-access/FilesController";
 import { StorageTier } from "../constants";
+import { CONFIG_ROOTDIR } from "../env";
 
-const accessCounterRootDir = "/srv/OpenDistributedFileStorage/accessCounters";
+const accessCounterRootDir = CONFIG_ROOTDIR + "/accessCounters";
 const latestDir = accessCounterRootDir + "/latest";
 const currentYearDir = accessCounterRootDir + "/currentYear";
 const pastYearsDir = accessCounterRootDir + "/pastYears";

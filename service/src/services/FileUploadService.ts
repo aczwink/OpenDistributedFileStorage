@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 import crypto from "crypto";
+import fs from "fs";
 import path from "path";
 import { Readable } from 'stream';
 import { Injectable } from "acts-util-node";
@@ -24,6 +25,7 @@ import { StorageBlocksManager } from "./StorageBlocksManager";
 import { CONST_BLOCKSIZE } from "../constants";
 import { FilesController } from "../data-access/FilesController";
 import { JobOrchestrationService } from "./JobOrchestrationService";
+import { StreamToBuffer } from "acts-util-node/dist/fs/Util";
 
 @Injectable
 export class FileUploadService
@@ -35,37 +37,58 @@ export class FileUploadService
     }
 
     //Public methods
-    public async Upload(containerId: number, parentPath: string, originalName: string, mediaType: string, buffer: Buffer)
+    public async CreateUploadJob(containerId: number, parentPath: string, originalName: string, mediaType: string, uploadPath: string)
     {
-        const blobId = await this.ProcessBlob(Readable.from(buffer));
-        let fileId;
-        try
+        const containerPath = path.join(parentPath, originalName);
+        const id = await this.filesController.FindIdByName(containerId, containerPath);
+        if(id !== undefined)
+            return "error_file_exists";
+
+        this.jobOrchestrationService.ScheduleJob({
+            type: "upload-file",
+            containerId,
+            containerPath,
+            mediaType,
+            uploadPath
+        });
+    }
+
+    public async CreateUploadRevisionJob(fileId: number, uploadPath: string)
+    {
+        const fileMetaData = await this.filesController.Query(fileId);
+
+        this.jobOrchestrationService.ScheduleJob({
+            type: "upload-file",
+            containerId: fileMetaData!.containerId,
+            containerPath: fileMetaData!.filePath,
+            fileId,
+            mediaType: fileMetaData!.mediaType,
+            uploadPath
+        });
+    }
+
+    public async UploadBlobFromDisk(filePath: string)
+    {
+        return await this.ProcessFile(filePath);
+    }
+
+    public async UploadFileFromDisk(containerId: number, containerPath: string, mediaType: string, uploadPath: string, fileId?: number)
+    {
+        const blobId = await this.UploadBlobFromDisk(uploadPath);
+        if(fileId === undefined)
         {
-            const filePath = path.join(parentPath, originalName);
-            fileId = await this.filesController.AddFile(containerId, filePath, mediaType);
-        }
-        catch(e: any)
-        {
-            if(e?.code === "ER_DUP_ENTRY")
-                return "error_file_exists";
-            throw e;
+            fileId = await this.filesController.AddFile(containerId, containerPath, mediaType);
         }
         await this.filesController.AddRevision(fileId, blobId);
 
         this.OnFileBlobChanged(fileId);
 
-        return fileId;
-    }
-
-    public async UploadBlob(buffer: Buffer)
-    {
-        const blobId = await this.ProcessBlob(Readable.from(buffer));
-        return blobId;
+        await fs.promises.unlink(uploadPath);
     }
 
     public async UploadRevision(fileId: number, buffer: Buffer)
     {
-        const blobId = await this.ProcessBlob(Readable.from(buffer));
+        const blobId = await this.ProcessStreamInParallel(Readable.from(buffer));
         await this.filesController.AddRevision(fileId, blobId);
 
         this.OnFileBlobChanged(fileId);
@@ -82,7 +105,31 @@ export class FileUploadService
         return newBlobId;
     }
 
-    private ProcessBlob(stream: Readable)
+    private async ProcessFile(filePath: string)
+    {
+        const stats = await fs.promises.stat(filePath);
+
+        const hasher = crypto.createHash("sha256");
+
+        const blockIds = [];
+        for(let blockCounter = 0; true; blockCounter++)
+        {
+            const start = blockCounter * CONST_BLOCKSIZE;
+            const end = start + CONST_BLOCKSIZE - 1;
+            if(start > stats.size)
+                break;
+
+            const stream = fs.createReadStream(filePath, { start, end });
+            const buffer = await StreamToBuffer(stream);
+            const blockId = await this.ProcessBlobBlock(buffer);
+            hasher.update(buffer);
+            blockIds.push(blockId);
+        }
+
+        return await this.FindOrCreateBlob(hasher.digest("hex"), blockIds)
+    }
+
+    private ProcessStreamInParallel(stream: Readable)
     {
         const blockIdsPromises: Promise<number>[] = [];
 
