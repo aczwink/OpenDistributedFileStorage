@@ -126,7 +126,8 @@ export class FileUploadService
             blockIds.push(blockId);
         }
 
-        return await this.FindOrCreateBlob(hasher.digest("hex"), blockIds)
+        console.log(blockIds);
+        return await this.FindOrCreateBlob(hasher.digest("hex"), blockIds);
     }
 
     private ProcessStreamInParallel(stream: Readable)
@@ -190,14 +191,17 @@ export class FileUploadService
     private async ProcessBlobBlock(blobBlock: Buffer)
     {
         const sha256sum = crypto.createHash("sha256").update(blobBlock).digest("hex");
-        return this.ProcessBlobBlockHashed(blobBlock, sha256sum);
+        return await this.ProcessBlobBlockHashed(blobBlock, sha256sum);
     }
 
     private async ProcessBlobBlockHashed(blobBlock: Buffer, sha256sum: string): Promise<number>
     {
         const blockId = await this.blobsController.FindBlobBlock(blobBlock.byteLength, sha256sum);
         if(blockId !== undefined)
+        {
+            console.log("FOUND", blockId);
             return blockId;
+        }
 
         let newBlockId;
         try
@@ -208,6 +212,7 @@ export class FileUploadService
         {
             if(e?.code === "ER_DUP_ENTRY")
                 return await this.ProcessBlobBlockHashed(blobBlock, sha256sum);
+            console.log("error", e);
             throw e;
         }
         const storageBlock = await this.storageBackendsManager.StoreBlobBlock(blobBlock);

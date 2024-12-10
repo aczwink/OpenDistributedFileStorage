@@ -16,13 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 import "dotenv/config";
+import fs from "fs";
 import http from "http";
 
 import { AbsURL, OpenAPI } from "acts-util-core";
 import { Factory, GlobalInjector, HTTP } from "acts-util-node";
 import { APIRegistry } from "acts-util-apilib";
 import { DBConnectionsManager } from "./data-access/DBConnectionsManager";
-import { CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT, CONFIG_UPLOADDIR } from "./env";
+import { CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT, CONFIG_ROOTDIR, CONFIG_UPLOADDIR } from "./env";
 import { FtpSrv, GeneralError } from "ftp-srv";
 import { FTPFileSystem } from "./FTPFileSystem";
 import { StorageBackendsManager } from "./services/StorageBackendsManager";
@@ -34,6 +35,8 @@ import { StreamingService } from "./services/StreamingService";
 import { AccessCounterService } from "./services/AccessCounterService";
 import { StorageBlocksManager } from "./services/StorageBlocksManager";
 import { FileUploadService } from "./services/FileUploadService";
+
+const crashDetectionPath = CONFIG_ROOTDIR + "/crash_check";
 
 async function DownloadPublicKey()
 {
@@ -129,6 +132,7 @@ async function BootstrapServer()
         console.log("Shutting server down...");
         GlobalInjector.Resolve(DBConnectionsManager).Close();
         GlobalInjector.Resolve(MessagingService).Close();
+        fs.unlinkSync(crashDetectionPath);
         server.close();
     });
 }
@@ -160,5 +164,24 @@ function BootstrapFTPServer()
     });
 }
 
-BootstrapServer();
-BootstrapFTPServer();
+function BootstrapService()
+{
+    if(fs.existsSync(crashDetectionPath))
+    {
+        console.log("Service did crash :S");
+        process.exit(1);
+        return;
+    }
+    process.on("uncaughtException", (error, origin) => {
+        console.log("Unhandled exception: ", error, origin);
+    });
+    process.on("unhandledRejection", (reason, promise) => {
+        console.log("Unhandled rejection: ", reason, promise);
+    });
+    fs.writeFileSync(crashDetectionPath, "");
+
+    BootstrapServer();
+    BootstrapFTPServer();
+}
+
+BootstrapService();
