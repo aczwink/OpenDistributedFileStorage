@@ -85,9 +85,12 @@ export class ViewFileComponent extends Component
 
     private RenderSubNav()
     {
+        const isAudio = this.data?.mediaType.startsWith("audio/") ?? false;
+        const isImage = this.data?.mediaType.startsWith("image/") ?? false;
         return <ul className="nav nav-pills flex-column">
             <NavItem route={"/" + this.containerId + "/" + this.fileId + "/content"}><BootstrapIcon>eyeglasses</BootstrapIcon> View</NavItem>
-            {this.data?.mediaType.startsWith("audio/") ? <NavItem route={"/" + this.containerId + "/" + this.fileId + "/metadata"}><BootstrapIcon>info-circle</BootstrapIcon> Song info</NavItem> : null}
+            {isAudio ? <NavItem route={"/" + this.containerId + "/" + this.fileId + "/metadata"}><BootstrapIcon>info-circle</BootstrapIcon> Song info</NavItem> : null}
+            {isImage ? <NavItem route={"/" + this.containerId + "/" + this.fileId + "/imgmetadata"}><BootstrapIcon>info-circle</BootstrapIcon> Photo info</NavItem> : null}
             <NavItem route={"/" + this.containerId + "/" + this.fileId + "/accesses"}><BootstrapIcon>graph-up</BootstrapIcon> Access statistics</NavItem>
             <NavItem route={"/" + this.containerId + "/" + this.fileId + "/revisions"}><BootstrapIcon>card-list</BootstrapIcon> Revisions</NavItem>
             <NavItem route={"/" + this.containerId + "/" + this.fileId + "/versions"}><BootstrapIcon>clock-history</BootstrapIcon> Versions</NavItem>

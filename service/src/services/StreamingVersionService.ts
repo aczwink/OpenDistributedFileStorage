@@ -20,36 +20,33 @@ import path from "path";
 import { Injectable } from "acts-util-node";
 import { StreamingVersionType } from "../BackgroundJob";
 import { FileDownloadService } from "./FileDownloadService";
-import { FilesController } from "../data-access/FilesController";
 import { CommandExecutor } from "./CommandExecutor";
-import { FileVersionsController } from "../data-access/FileVersionsController";
+import { BlobVersionsController } from "../data-access/BlobVersionsController";
 import { FileUploadService } from "./FileUploadService";
 import { CONST_SERVICE_USER_FAKEID } from "../constants";
 
 @Injectable
 export class StreamingVersionService
 {
-    constructor(private filesController: FilesController, private fileDownloadService: FileDownloadService, private commandExecutor: CommandExecutor,
-        private fileVersionsController: FileVersionsController, private fileUploadService: FileUploadService
+    constructor(private fileDownloadService: FileDownloadService, private commandExecutor: CommandExecutor,
+        private blobVersionsController: BlobVersionsController, private fileUploadService: FileUploadService
     )
     {
     }
 
     //Public methods
-    public async Compute(fileId: number, targetType: StreamingVersionType)
+    public async Compute(blobId: number, targetType: StreamingVersionType)
     {
-        const rev = await this.filesController.QueryNewestRevision(fileId);
-
         let tmpDir;
         try
         {
             tmpDir = await fs.promises.mkdtemp("/tmp/oos");
 
-            const blob = await this.fileDownloadService.DownloadBlob(rev!.blobId, CONST_SERVICE_USER_FAKEID);
+            const blob = await this.fileDownloadService.DownloadBlob(blobId, CONST_SERVICE_USER_FAKEID);
             const inputPath = path.join(tmpDir, "__input");
             await fs.promises.writeFile(inputPath, blob);
 
-            await this.Process(fileId, inputPath, targetType);
+            await this.Process(inputPath, targetType);
         }
         finally
         {
@@ -70,7 +67,7 @@ export class StreamingVersionService
         }
     }
 
-    private async Process(fileId: number, inputPath: string, targetType: StreamingVersionType)
+    private async Process(inputPath: string, targetType: StreamingVersionType)
     {
         const dirPath = path.dirname(inputPath);
         const targetPath = path.join(dirPath, "__output.mp4");
@@ -103,7 +100,7 @@ export class StreamingVersionService
         ];
         await this.commandExecutor.Execute(command);
 
-        const blobId = await this.fileUploadService.UploadBlobFromDisk(targetPath);
-        await this.fileVersionsController.AddVersion(fileId, blobId, "stream_" + targetType);
+        const result = await this.fileUploadService.UploadBlobFromDisk(targetPath);
+        await this.blobVersionsController.AddVersion(result.blobId, "stream_" + targetType);
     }
 }

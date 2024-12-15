@@ -47,6 +47,6 @@ export class HostFileSystemBackend implements StorageBackend
     public async StoreFile(filePath: string, buffer: Buffer): Promise<void>
     {
         const fullPath = path.join(this.rootPath, filePath);
-        await fs.promises.writeFile(fullPath, buffer);
+        await fs.promises.writeFile(fullPath, buffer, { flush: true });
     }
 }

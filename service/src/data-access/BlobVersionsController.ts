@@ -19,45 +19,32 @@
 import { Injectable } from "acts-util-node";
 import { DBConnectionsManager } from "./DBConnectionsManager";
 
-interface FileVersion
+interface BlobVersion
 {
     blobId: number;
     title: string;
 }
 
 @Injectable
-export class FileVersionsController
+export class BlobVersionsController
 {
     constructor(private dbConnMgr: DBConnectionsManager)
     {
     }
 
     //Public methods
-    public async AddVersion(fileId: number, blobId: number, title: string)
+    public async AddVersion(blobId: number, title: string)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        await conn.InsertRow("files_versions", {
-            fileId,
+        await conn.InsertRow("blobs_versions", {
             blobId,
             title
         });
     }
 
-    public async ClearByPrefix(fileId: number, titlePrefix: string)
+    public async QueryVersions(blobId: number)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        await conn.DeleteRows("files_versions", "fileId = ? AND title LIKE ?", fileId, titlePrefix + "%");
-    }
-
-    public async Delete(fileId: number, title: string)
-    {
-        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        await conn.DeleteRows("files_versions", "fileId = ? AND title = ?", fileId, title);
-    }
-
-    public async QueryVersions(fileId: number)
-    {
-        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        return await conn.Select<FileVersion>("SELECT blobId, title FROM `files_versions` WHERE fileId = ?", fileId);
+        return await conn.Select<BlobVersion>("SELECT blobId, title FROM `blobs_versions` WHERE blobId = ?", blobId);
     }
 }

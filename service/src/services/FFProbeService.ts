@@ -43,7 +43,7 @@ export interface FFProbe_MediaInfo
 {
     format: {
         duration: string;
-        tags: {
+        tags?: {
             artist?: string;
             comment?: string;
             title?: string;
@@ -63,6 +63,8 @@ export class FFProbeService
     public async AnalyzeMediaFile(mediaFilePath: string)
     {
         const result = await this.commandExecutor.Execute(["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", mediaFilePath]);
+        if(result.exitCode === 1)
+            return null;
 
         return JSON.parse(result.stdOut) as FFProbe_MediaInfo;
     }

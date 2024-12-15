@@ -1,7 +1,7 @@
 /*!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.8-MariaDB, for debian-linux-gnu (x86_64)
 --
--- Host: localhost    Database: openobjectstorage
+-- Host: localhost    Database: opendistributedfilestorage
 -- ------------------------------------------------------
 -- Server version	10.11.8-MariaDB-0ubuntu0.24.04.1
 
@@ -100,6 +100,22 @@ CREATE TABLE `blobs_metadata` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `blobs_versions`
+--
+
+DROP TABLE IF EXISTS `blobs_versions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `blobs_versions` (
+  `blobId` int(10) unsigned NOT NULL,
+  `title` varchar(100) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  PRIMARY KEY (`blobId`,`title`),
+  KEY `files_versions_blobId` (`blobId`),
+  CONSTRAINT `files_versions_blobId` FOREIGN KEY (`blobId`) REFERENCES `blobs` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `containers`
 --
 
@@ -178,24 +194,6 @@ CREATE TABLE `files_tags` (
   KEY `files_tags_tagId` (`tagId`),
   CONSTRAINT `files_tags_fileId` FOREIGN KEY (`fileId`) REFERENCES `files` (`id`),
   CONSTRAINT `files_tags_tagId` FOREIGN KEY (`tagId`) REFERENCES `tags` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `files_versions`
---
-
-DROP TABLE IF EXISTS `files_versions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `files_versions` (
-  `fileId` int(10) unsigned NOT NULL,
-  `blobId` int(10) unsigned NOT NULL,
-  `title` varchar(100) NOT NULL,
-  KEY `files_versions_fileId` (`fileId`),
-  KEY `files_versions_blobId` (`blobId`),
-  CONSTRAINT `files_versions_blobId` FOREIGN KEY (`blobId`) REFERENCES `blobs` (`id`),
-  CONSTRAINT `files_versions_fileId` FOREIGN KEY (`fileId`) REFERENCES `files` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -289,4 +287,4 @@ CREATE TABLE `tags` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-11-10 22:20:40
+-- Dump completed on 2024-12-15 21:19:33

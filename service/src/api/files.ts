@@ -24,7 +24,7 @@ import { FileDownloadService } from "../services/FileDownloadService";
 import { FileUploadService } from "../services/FileUploadService";
 import { Of } from "acts-util-core";
 import { TagsController } from "../data-access/TagsController";
-import { FileVersionsController } from "../data-access/FileVersionsController";
+import { BlobVersionsController } from "../data-access/BlobVersionsController";
 import { StreamingVersionType } from "../BackgroundJob";
 import { JobOrchestrationService } from "../services/JobOrchestrationService";
 import { StreamingService } from "../services/StreamingService";
@@ -33,6 +33,7 @@ import { FFProbeService } from "../services/FFProbeService";
 import { AccessCounterService } from "../services/AccessCounterService";
 import { BlobsController } from "../data-access/BlobsController";
 import { AudioMetadataTaggingService, AudioMetadataTags } from "../services/AudioMetadataTaggingService";
+import { ImageMetadataService } from "../services/ImageMetadataService";
 
 interface FileMetaDataDTO extends FileMetaData
 {   
@@ -53,9 +54,10 @@ interface StreamingRequestResultDTO
 class _api_
 {
     constructor(private containersController: ContainersController, private filesController: FilesController, private fileDownloadService: FileDownloadService,
-        private fileUploadService: FileUploadService, private tagsController: TagsController, private fileVersionsController: FileVersionsController,
+        private fileUploadService: FileUploadService, private tagsController: TagsController, private fileVersionsController: BlobVersionsController,
         private jobOrchestrationService: JobOrchestrationService, private streamingService: StreamingService, private ffprobeService: FFProbeService,
-        private accessCounterService: AccessCounterService, private blobsController: BlobsController, private audioMetadataService: AudioMetadataTaggingService
+        private accessCounterService: AccessCounterService, private blobsController: BlobsController, private audioMetadataService: AudioMetadataTaggingService,
+        private imageMetadataService: ImageMetadataService
     )
     {
     }
@@ -147,9 +149,14 @@ class _api_
         const blobId = rev!.blobId;
 
         const tags = await this.audioMetadataService.FetchTags(blobId);
-        if(tags === undefined)
-            return NotFound("no tags available for this file");
-        return tags;
+        if(tags !== undefined)
+            return tags;
+
+        const tags2 = await this.imageMetadataService.FetchTags(blobId);
+        if(tags2 !== undefined)
+            return tags2;
+        
+        return NotFound("no tags available for this file");
     }
 
     @Post("meta")
@@ -197,16 +204,16 @@ class _api_
         @Auth("jwt") accessToken: AccessToken
     )
     {
-        const versions = await this.fileVersionsController.QueryVersions(fileMetaData.id);
+        const rev = await this.filesController.QueryNewestRevision(fileMetaData.id);
+        const blobId = rev!.blobId;
+
+        const versions = await this.fileVersionsController.QueryVersions(blobId);
 
         const options = versions.Values().Filter(x => x.title.startsWith("stream_")).Map(x => ({
             blobId: x.blobId,
             mediaType: "video/mp4",
             quality: x.title.substring("stream_".length) as StreamingVersionType,
         })).ToArray();
-
-        const rev = await this.filesController.QueryNewestRevision(fileMetaData.id);
-        const blobId = rev!.blobId;
 
         const streamableBlobIds = options.Values().Map(x => x.blobId).ToArray();
         streamableBlobIds.push(blobId); //the newest revision can always be accepted to be streamed (i.e. binary stream instead of video stream)
@@ -230,11 +237,12 @@ class _api_
     }
 
     @Get("versions")
-    public RequestFileVersions(
+    public async RequestFileVersions(
         @Common file: FileMetaData
     )
     {
-        return this.fileVersionsController.QueryVersions(file.id);
+        const rev = await this.filesController.QueryNewestRevision(file.id);
+        return await this.fileVersionsController.QueryVersions(rev!.blobId);
     }
 
     @Get("versions/blob")
@@ -254,9 +262,11 @@ class _api_
         @BodyProp type: StreamingVersionType,
     )
     {
+        const rev = await this.filesController.QueryNewestRevision(fileMetaData.id);
+
         this.jobOrchestrationService.ScheduleJob({
             type: "compute-streaming-version",
-            fileId: fileMetaData.id,
+            blobId: rev!.blobId,
             targetType: type
         });
     }

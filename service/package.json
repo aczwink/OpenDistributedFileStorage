@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npx acts-util-apilib && npx webpack",
     "build-docker-image": "docker build -t odfs .",
-    "run-dev-server": "nodemon --exec \"npx acts-util-apilib; tsc; node dist/src/main.js\""
+    "run-dev-server": "nodemon --exec \"npx acts-util-apilib; tsc; rm /srv/OpenDistributedFileStorage/crash_check; node dist/src/main.js\""
   },
   "keywords": [],
   "author": "Amir Czwink",
@@ -26,7 +26,6 @@
     "acts-util-node": "*",
     "amqplib": "^0.10.4",
     "dotenv": "^16.4.5",
-    "ftp-srv": "^4.6.3",
     "jsonwebtoken": "^9.0.2"
   }
 }

@@ -22,6 +22,7 @@ export const CONFIG_DB = {
     password: process.env.ODFS_DBPW!,
 };
 
+export const CONFIG_AUDIENCE = process.env.ODFS_AUDIENCE!;
 export const CONFIG_MAX_NUMBER_OF_CACHED_BLOCKS = parseInt(process.env.ODFS_MAX_CACHE_SIZE!); //in units of 100 MiB
 export const CONFIG_OIDP_ENDPOINT = process.env.ODFS_OIDP_ENDPOINT!;
 export const CONFIG_ORIGIN = process.env.ODFS_ORIGIN!;

@@ -20,14 +20,15 @@ export type StreamingVersionType = "360p" | "480p";
 interface ComputeStreamingVersion
 {
     type: "compute-streaming-version";
-    fileId: number;
+    blobId: number;
     targetType: StreamingVersionType;
 }
 
 interface ComputeThumbs
 {
     type: "compute-thumbs";
-    fileId: number;
+    blobId: number;
+    mediaType: string;
 }
 
 interface FileUploadJob

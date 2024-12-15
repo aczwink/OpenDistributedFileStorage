@@ -19,39 +19,36 @@ import fs from "fs";
 import path from "path";
 import { Injectable } from "acts-util-node";
 import { FileDownloadService } from "./FileDownloadService";
-import { FilesController } from "../data-access/FilesController";
 import { CommandExecutor } from "./CommandExecutor";
 import { FileUploadService } from "./FileUploadService";
-import { FileVersionsController } from "../data-access/FileVersionsController";
+import { BlobVersionsController } from "../data-access/BlobVersionsController";
 import { FFProbe_MediaInfo, FFProbeService } from "./FFProbeService";
 import { BlobsController } from "../data-access/BlobsController";
 import { CONST_SERVICE_USER_FAKEID } from "../constants";
+import { ImageMetadataService } from "./ImageMetadataService";
 
 @Injectable
 export class ThumbnailService
 {
-    constructor(private filesController: FilesController, private fileDownloadService: FileDownloadService, private commandExecutor: CommandExecutor,
-        private fileUploadService: FileUploadService, private fileVersionsController: FileVersionsController, private ffProbeService: FFProbeService,
-        private blobsController: BlobsController,
+    constructor(private fileDownloadService: FileDownloadService, private commandExecutor: CommandExecutor,
+        private fileUploadService: FileUploadService, private blobVersionsController: BlobVersionsController, private ffProbeService: FFProbeService,
+        private blobsController: BlobsController, private imageMetadataService: ImageMetadataService
     )
     {
     }
 
-    public async Compute(fileId: number)
+    public async Compute(blobId: number, mediaType: string)
     {
-        const fileMetaData = await this.filesController.Query(fileId);
-        const rev = await this.filesController.QueryNewestRevision(fileId);
-
         let tmpDir;
         try
         {
             tmpDir = await fs.promises.mkdtemp("/tmp/oos");
 
-            const blob = await this.fileDownloadService.DownloadBlob(rev!.blobId, CONST_SERVICE_USER_FAKEID);
+            const blob = await this.fileDownloadService.DownloadBlob(blobId, CONST_SERVICE_USER_FAKEID);
             const inputPath = path.join(tmpDir, "__input");
             await fs.promises.writeFile(inputPath, blob);
 
-            await this.Process(fileId, rev!.blobId, inputPath, fileMetaData!.mediaType);
+            await this.Process(blobId, inputPath, mediaType);
         }
         finally
         {
@@ -60,25 +57,28 @@ export class ThumbnailService
         }
     }
 
-    private async Process(fileId: number, blobId: number, mediaFilePath: string, mediaType: string)
+    private async Process(blobId: number, mediaFilePath: string, mediaType: string)
     {
         const mediaInfo = await this.ffProbeService.AnalyzeMediaFile(mediaFilePath);
-        await this.blobsController.WriteMetaData(blobId, "av", JSON.stringify(mediaInfo));
+        if(mediaInfo !== null)
+            await this.blobsController.WriteMetaData(blobId, "av", JSON.stringify(mediaInfo));
 
-        await this.fileVersionsController.ClearByPrefix(fileId, "thumb_");
-        await this.fileVersionsController.Delete(fileId, "preview");
-
-        if(!mediaType.startsWith("audio/"))
+        const isImage = mediaType.startsWith("image/");
+        if(isImage)
         {
-            const isImage = mediaType.startsWith("image/");
+            const info = await this.imageMetadataService.ExtractTags(mediaFilePath);
+            await this.blobsController.WriteMetaData(blobId, "img", JSON.stringify(info));
+        }
 
+        if(!mediaType.startsWith("audio/") && (mediaInfo !== null))
+        {
             const thumbPaths = isImage ? [await this.ComputeImageThumb(mediaFilePath, mediaInfo)] : await this.ComputeVideoThumbs(mediaFilePath, mediaInfo);
             for (const thumbPath of thumbPaths)
             {
-                const blobId = await this.fileUploadService.UploadBlobFromDisk(thumbPath);
+                const result = await this.fileUploadService.UploadBlobFromDisk(thumbPath);
 
                 const parsed = path.parse(thumbPath);
-                await this.fileVersionsController.AddVersion(fileId, blobId, parsed.name);
+                await this.blobVersionsController.AddVersion(result.blobId, parsed.name);
             }
         }
     }

@@ -32,8 +32,9 @@ import { ListStorageBackendsComponent } from "./storage-backends/ListStorageBack
 import { CreateStorageBackendComponent } from "./storage-backends/CreateStorageBackendComponent";
 import { ViewFileVersionsComponent } from "./file-explorer/ViewFileVersionsComponent";
 import { CreateFileVersionComponent } from "./file-explorer/CreateFileVersionComponent";
-import { EditAVMetaDataComponent } from "./file-explorer/EditAVMetaDataComponent";
 import { FileAccessesComponent } from "./file-explorer/FileAccessesComponent";
+import { EditAVMetaDataComponent } from "./file-explorer/metadata/EditAVMetaDataComponent";
+import { ViewImageMetaDataComponent } from "./file-explorer/metadata/ViewImageMetaDataComponent";
 
 const writeGuard = new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_FILES_WRITE] });
 
@@ -42,6 +43,7 @@ const fileRoutes: Routes = [
     { path: "content", component: <ViewFileContentComponent /> },
     { path: "edit", component: <EditFileAttributesComponent />, guards: [ writeGuard ] },
     { path: "metadata", component: <EditAVMetaDataComponent />, guards: [ writeGuard ] },
+    { path: "imgmetadata", component: <ViewImageMetaDataComponent /> },
     { path: "revisions", component: <ViewFileRevisionsComponent /> },
     { path: "versions/create", component: <CreateFileVersionComponent />, guards: [ writeGuard ] },
     { path: "versions", component: <ViewFileVersionsComponent /> },

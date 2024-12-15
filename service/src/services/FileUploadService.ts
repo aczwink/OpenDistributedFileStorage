@@ -74,24 +74,29 @@ export class FileUploadService
 
     public async UploadFileFromDisk(containerId: number, containerPath: string, mediaType: string, uploadPath: string, fileId?: number)
     {
-        const blobId = await this.UploadBlobFromDisk(uploadPath);
+        const result = await this.UploadBlobFromDisk(uploadPath);
         if(fileId === undefined)
         {
             fileId = await this.filesController.AddFile(containerId, containerPath, mediaType);
         }
-        await this.filesController.AddRevision(fileId, blobId);
+        await this.filesController.AddRevision(fileId, result.blobId);
 
-        this.OnFileBlobChanged(fileId);
+        if(result.isNew)
+            this.OnNewFileBlobUploaded(result.blobId, mediaType);
 
         await fs.promises.unlink(uploadPath);
     }
 
     public async UploadRevision(fileId: number, buffer: Buffer)
     {
-        const blobId = await this.ProcessStreamInParallel(Readable.from(buffer));
-        await this.filesController.AddRevision(fileId, blobId);
+        const result = await this.ProcessStreamInParallel(Readable.from(buffer));
+        await this.filesController.AddRevision(fileId, result.blobId);
 
-        this.OnFileBlobChanged(fileId);
+        if(result.isNew)
+        {
+            const md = await this.filesController.Query(fileId);
+            this.OnNewFileBlobUploaded(result.blobId, md!.mediaType);
+        }
     }
 
     //Private methods
@@ -99,10 +104,10 @@ export class FileUploadService
     {
         const blobId = await this.blobsController.FindBlobByHash(sha256sum);
         if(blobId !== undefined)
-            return blobId;
+            return { blobId, isNew: false };
 
         const newBlobId = await this.blobsController.AddBlob(sha256sum, blockIds);
-        return newBlobId;
+        return { blobId: newBlobId, isNew: true };
     }
 
     private async ProcessFile(filePath: string)
@@ -126,7 +131,6 @@ export class FileUploadService
             blockIds.push(blockId);
         }
 
-        console.log(blockIds);
         return await this.FindOrCreateBlob(hasher.digest("hex"), blockIds);
     }
 
@@ -173,7 +177,7 @@ export class FileUploadService
             }
         }
 
-        return new Promise<number>(resolve => {
+        return new Promise<{ blobId: number; isNew: boolean; }>(resolve => {
             stream.on("data", chunk => {
                 hasher.update(chunk);
                 addChunk(chunk);
@@ -198,10 +202,7 @@ export class FileUploadService
     {
         const blockId = await this.blobsController.FindBlobBlock(blobBlock.byteLength, sha256sum);
         if(blockId !== undefined)
-        {
-            console.log("FOUND", blockId);
             return blockId;
-        }
 
         let newBlockId;
         try
@@ -222,16 +223,14 @@ export class FileUploadService
     }
 
     //Event handlers
-    private async OnFileBlobChanged(fileId: number)
+    private async OnNewFileBlobUploaded(blobId: number, mediaType: string)
     {
-        const md = await this.filesController.Query(fileId);
-        const mediaType = md!.mediaType;
-
         if(mediaType.startsWith("audio/") || mediaType.startsWith("image/") || mediaType.startsWith("video/"))
         {
             this.jobOrchestrationService.ScheduleJob({
                 type: "compute-thumbs",
-                fileId: fileId
+                blobId,
+                mediaType,
             });
         }
     }

@@ -70,13 +70,16 @@ export class AudioMetadataTaggingService
         const avData = await this.blobsController.QueryMetaData(blobId, "av");
         if(avData === undefined)
             return undefined;
-        return this.Map(JSON.parse(avData));
+        const parsed = JSON.parse(avData) as FFProbe_MediaInfo;
+        return this.Map(parsed);
     }
 
     //Private methods
-    private Map(mediaInfo: FFProbe_MediaInfo): AudioMetadataTags
+    private Map(mediaInfo: FFProbe_MediaInfo): AudioMetadataTags | undefined
     {
         const t = mediaInfo.format.tags;
+        if(t === undefined)
+            return undefined;
         return {
             artist: t.artist ?? "",
             comment: t.comment ?? "",

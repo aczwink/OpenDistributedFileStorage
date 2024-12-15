@@ -18,14 +18,11 @@
 import "dotenv/config";
 import fs from "fs";
 import http from "http";
-
 import { AbsURL, OpenAPI } from "acts-util-core";
 import { Factory, GlobalInjector, HTTP } from "acts-util-node";
 import { APIRegistry } from "acts-util-apilib";
 import { DBConnectionsManager } from "./data-access/DBConnectionsManager";
-import { CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT, CONFIG_ROOTDIR, CONFIG_UPLOADDIR } from "./env";
-import { FtpSrv, GeneralError } from "ftp-srv";
-import { FTPFileSystem } from "./FTPFileSystem";
+import { CONFIG_AUDIENCE, CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT, CONFIG_ROOTDIR, CONFIG_UPLOADDIR } from "./env";
 import { StorageBackendsManager } from "./services/StorageBackendsManager";
 import { MessagingService } from "./services/MessagingService";
 import { JobOrchestrationService } from "./services/JobOrchestrationService";
@@ -70,6 +67,7 @@ async function BootstrapServer()
     const jwtVerifier = new HTTP.JWTVerifier(
         await DownloadPublicKey(),
         "https://" + CONFIG_OIDP_ENDPOINT,
+        CONFIG_AUDIENCE,
         true
     );
     const streamingService = GlobalInjector.Resolve(StreamingService);
@@ -100,10 +98,10 @@ async function BootstrapServer()
         switch(job.type)
         {
             case "compute-streaming-version":
-                await GlobalInjector.Resolve(StreamingVersionService).Compute(job.fileId, job.targetType);
+                await GlobalInjector.Resolve(StreamingVersionService).Compute(job.blobId, job.targetType);
                 break;
             case "compute-thumbs":
-                await GlobalInjector.Resolve(ThumbnailService).Compute(job.fileId);
+                await GlobalInjector.Resolve(ThumbnailService).Compute(job.blobId, job.mediaType);
                 break;
             case "replicate":
                 await GlobalInjector.Resolve(StorageBlocksManager).Replicate(job.storageBlockId);
@@ -137,33 +135,6 @@ async function BootstrapServer()
     });
 }
 
-function BootstrapFTPServer()
-{
-    const port = 8888;
-    const ftpServer = new FtpSrv({
-        url: "ftp://0.0.0.0:" + port,
-        anonymous: true,
-    });
-
-    ftpServer.on('login', ({ connection, username, password }, resolve, reject) => { 
-        if(username === 'anonymous' && password === '@anonymous'){
-            return resolve({
-                fs: new FTPFileSystem(connection, {
-                    cwd: "/",
-                    root: "/"
-                }),
-                cwd: "/",
-                root: "/"
-            });
-        }
-        return reject(new GeneralError('Invalid username or password', 401));
-    });
-    
-    ftpServer.listen().then(() => { 
-        console.log('Ftp server is starting...')
-    });
-}
-
 function BootstrapService()
 {
     if(fs.existsSync(crashDetectionPath))
@@ -181,7 +152,6 @@ function BootstrapService()
     fs.writeFileSync(crashDetectionPath, "");
 
     BootstrapServer();
-    BootstrapFTPServer();
 }
 
 BootstrapService();

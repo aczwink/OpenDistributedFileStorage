@@ -19,7 +19,7 @@ import { DateTime, Injectable } from "acts-util-node";
 import { FileSequenceCache } from "../access-cache/FileSequenceCache";
 import { YearMonthCache } from "../access-cache/YearMonthCache";
 import { YearCache } from "../access-cache/YearCache";
-import { FileVersionsController } from "../data-access/FileVersionsController";
+import { BlobVersionsController } from "../data-access/BlobVersionsController";
 import { FilesController } from "../data-access/FilesController";
 import { StorageTier } from "../constants";
 import { CONFIG_ROOTDIR } from "../env";
@@ -45,7 +45,7 @@ interface AccessStatistics extends AccessCounts
 @Injectable
 export class AccessCounterService
 {
-    constructor(private fileVersionsController: FileVersionsController, private filesController: FilesController)
+    constructor(private blobVersionsController: BlobVersionsController, private filesController: FilesController)
     {
         this.max = {
             nearPast: 1,
@@ -81,8 +81,9 @@ export class AccessCounterService
     public async FetchFileAccessCounts(fileId: number)
     {
         const revisions = await this.filesController.QueryRevisions(fileId);
+        const newestRev = revisions[revisions.length - 1];
 
-        const versions = await this.fileVersionsController.QueryVersions(fileId);
+        const versions = await this.blobVersionsController.QueryVersions(newestRev.blobId);
         const filtered = versions.filter(x => (x.title !== "preview") && !x.title.startsWith("thumb_"));
 
         const c1 = revisions.map(x => this.FetchBlobAccessCounts(x.blobId));

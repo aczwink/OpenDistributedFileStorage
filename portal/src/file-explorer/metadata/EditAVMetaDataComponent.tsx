@@ -17,8 +17,8 @@
  * */
 
 import { BootstrapIcon, FormField, JSX_CreateElement, LineEdit, PushButton, Router, TextArea, Use, UseAPI, UseDeferredAPI, UseRouteParameter, UseState } from "acfrontend";
-import { APIService } from "../APIService";
-import { AudioMetadataTags } from "../../dist/api";
+import { AudioMetadataTags } from "../../../dist/api";
+import { APIService } from "../../APIService";
 
 function FormComponent(input: { containerId: number; fileId: number; audioTags: AudioMetadataTags; })
 {
@@ -50,5 +50,5 @@ export function EditAVMetaDataComponent()
     const fileId = UseRouteParameter("route", "fileId", "unsigned");
 
     const apiState = UseAPI( () => Use(APIService).files._any_.meta.get(fileId) );
-    return apiState.success ? <FormComponent containerId={containerId} fileId={fileId} audioTags={apiState.data} /> : apiState.fallback;
+    return apiState.success ? <FormComponent containerId={containerId} fileId={fileId} audioTags={apiState.data as AudioMetadataTags} /> : apiState.fallback;
 }
