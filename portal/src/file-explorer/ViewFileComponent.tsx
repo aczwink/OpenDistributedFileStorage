@@ -16,21 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { Injectable, Component, RouteParamProperty, ProgressSpinner, JSX_CreateElement, JSX_Fragment, BootstrapIcon, Anchor, FileDownloadService, NavItem, RouterComponent, InfoMessageManager } from "acfrontend";
-import { APIService } from "../APIService";
+import { Injectable, Component, RouteParamProperty, ProgressSpinner, JSX_CreateElement, JSX_Fragment, BootstrapIcon, Anchor, NavItem, RouterComponent, InfoMessageManager, PopupManager } from "acfrontend";
 import { FileMetaDataDTO } from "../../dist/api";
 import { FileEventsService } from "../FileEventsService";
 import { Subscription } from "acts-util-core";
+import { DownloadFileUsingProgressPopup } from "./DownloadFileUsingProgressPopup";
+import { APIService } from "../services/APIService";
+import { UploadFileModal } from "./UploadFileModal";
 
 let dragCounter = 0;
 
 @Injectable
 export class ViewFileComponent extends Component
 {
-    constructor(private apiService: APIService, private fileDownloadService: FileDownloadService, private infoMessageManager: InfoMessageManager,
+    constructor(private apiService: APIService, private infoMessageManager: InfoMessageManager,
         @RouteParamProperty("containerId") private containerId: number,
         @RouteParamProperty("fileId") private fileId: number,
-        private fileEventsService: FileEventsService
+        private fileEventsService: FileEventsService,
+        private popupManager: PopupManager,
     )
     {
         super();
@@ -145,26 +148,22 @@ export class ViewFileComponent extends Component
             return;
         }
 
-        const response = await this.apiService.files._any_.revisions.post(this.fileId, { file: files[0] });
-        switch(response.statusCode)
+        const context = this;
+        function OnFinish(success: boolean)
         {
-            case 204:
-                this.infoMessageManager.ShowMessage(<p>New revision uploaded successfully.</p>, { type: "success" });
-                this.LoadData();
-                break;
-            default:
-                this.infoMessageManager.ShowMessage(<p>An error occured while uploading the new revision.</p>, { type: "danger" });
+            if(success)
+            {
+                context.infoMessageManager.ShowMessage(<p>New revision uploaded successfully.</p>, { type: "success" });
+                context.LoadData();
+            }
         }
-
+        this.popupManager.OpenModal(<UploadFileModal context={{ type: "newrevision", fileId: this.fileId }} files={files} onFinish={OnFinish} />, { className: "fade show d-block" });
     }
 
     //Event handlers
     private async OnDownloadFile()
     {
-        const response = await this.apiService.files._any_.blob.get(this.fileId);
-        if(response.statusCode !== 200)
-            throw new Error("TODO: implement me");
-        this.fileDownloadService.DownloadBlobAsFile(response.data, this.GetFileName());
+        DownloadFileUsingProgressPopup(this.GetFileName(), progressTracker => this.apiService.files._any_.blob.get(this.fileId, { progressTracker }));
     }
 
     private OnDragEnter(event: DragEvent)

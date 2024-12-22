@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { Anchor, AutoCompleteMultiSelectBox, BootstrapIcon, Component, FormField, Injectable, JSX_CreateElement, JSX_Fragment, LineEdit, ProgressSpinner, RouteParamProperty } from "acfrontend";
-import { APIService } from "../APIService";
+import { Anchor, AutoCompleteMultiSelectBox, BootstrapIcon, Component, FormField, Injectable, JSX_CreateElement, JSX_Fragment, LineEdit, ProgressSpinner, RouteParamProperty, RouterButton } from "acfrontend";
 import { DirectoryContentsDTO } from "../../dist/api";
 import { FilesGridView } from "./FilesGridView";
 import { FilesTableView } from "./FilesTableView";
+import { APIService } from "../services/APIService";
 
 @Injectable
 export class DirectoryViewComponent extends Component<{ dirPath: string }>
@@ -51,6 +51,7 @@ export class DirectoryViewComponent extends Component<{ dirPath: string }>
                             <br />
                             <button type="button" className={this.GetToggleButtonClassName(this.view === "grid")} onclick={() => this.view = "grid"}><BootstrapIcon>grid</BootstrapIcon></button>
                             <button type="button" className={this.GetToggleButtonClassName(this.view === "list")} onclick={() => this.view = "list"}><BootstrapIcon>view-list</BootstrapIcon></button>
+                            <Anchor route={"/" + this.containerId + "/maps"}><BootstrapIcon>globe-europe-africa</BootstrapIcon></Anchor>
                         </li>
                     </ol>
                 </nav>

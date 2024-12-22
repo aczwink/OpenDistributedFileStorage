@@ -35,6 +35,8 @@ import { CreateFileVersionComponent } from "./file-explorer/CreateFileVersionCom
 import { FileAccessesComponent } from "./file-explorer/FileAccessesComponent";
 import { EditAVMetaDataComponent } from "./file-explorer/metadata/EditAVMetaDataComponent";
 import { ViewImageMetaDataComponent } from "./file-explorer/metadata/ViewImageMetaDataComponent";
+import { LargeBlobsReport } from "./reporting/LargeBlobsReport";
+import { ViewMapsComponent } from "./geolocation/ViewMapsComponent";
 
 const writeGuard = new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_FILES_WRITE] });
 
@@ -51,6 +53,7 @@ const fileRoutes: Routes = [
 ];
 
 const containerRoutes: Routes = [
+    { path: "maps", component: <ViewMapsComponent /> },
     { path: "{fileId}", component: <ViewFileComponent />, children: fileRoutes, },
     { path: "", component: <FileExplorerComponent /> }
 ];
@@ -58,6 +61,7 @@ const containerRoutes: Routes = [
 const settingsRoutes: Routes = [
     { path: "containers/create", component: <CreateContainersComponent /> },
     { path: "containers", component: <ListContainersComponent /> },
+    { path: "reporting", component: <LargeBlobsReport /> },
     { path: "storagebackends/create", component: <CreateStorageBackendComponent /> },
     { path: "storagebackends", component: <ListStorageBackendsComponent /> },
     { path: "", redirect: "containers" }

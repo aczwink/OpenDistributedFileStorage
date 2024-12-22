@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "acfrontend": "*",
-    "acts-util-core": "*"
+    "acts-util-core": "*",
+    "country-iso-2-to-3": "^1.1.0"
   }
 }

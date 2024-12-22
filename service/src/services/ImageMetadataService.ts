@@ -30,8 +30,8 @@ interface ImageTags
 {
     geolocation?: {
         dateTime: string;
-        latitude: string;
-        longitude: string;
+        latitude: number;
+        longitude: number;
     }
 }
 
@@ -64,11 +64,14 @@ export class ImageMetadataService
     {
         if((exif.GPSDateTime !== undefined) && (exif.GPSLatitude !== undefined) && (exif.GPSLongitude !== undefined))
         {
+            const lat = exif.GPSLatitude.substring(0, exif.GPSLatitude.length - 2);
+            const lon = exif.GPSLongitude.substring(0, exif.GPSLongitude.length - 2);
+
             return {
                 geolocation: {
                     dateTime: exif.GPSDateTime,
-                    latitude: exif.GPSLatitude,
-                    longitude: exif.GPSLongitude
+                    latitude: parseFloat(lat),
+                    longitude: parseFloat(lon)
                 }
             };
         }

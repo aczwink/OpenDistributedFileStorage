@@ -17,8 +17,8 @@
  * */
 import { BootstrapIcon, Component, Injectable, JSX_CreateElement, JSX_Fragment, Navigation, NavItem, OAuth2Service, OAuth2TokenManager, Router, RouterComponent } from "acfrontend";
 import { CONFIG_OIDC } from "./config";
-import { APIService } from "./APIService";
 import { SCOPE_FILES_WRITE } from "./definitions";
+import { APIService } from "./services/APIService";
 
 @Injectable
 export class RootComponent extends Component
@@ -59,6 +59,7 @@ export class RootComponent extends Component
     {
         if(this.router.state.Get().ToUrl().path.startsWith("/settings"))
             return <NavItem route="/"><BootstrapIcon>house</BootstrapIcon></NavItem>;
+        
         return this.RenderEditCheck();
     }
 

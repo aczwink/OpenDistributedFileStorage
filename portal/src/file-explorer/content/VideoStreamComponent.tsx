@@ -17,9 +17,9 @@
  * */
 
 import { Component, FormField, Injectable, JSX_CreateElement, JSX_Fragment, ProgressSpinner, RouteParamProperty, Select } from "acfrontend";
-import { APIService } from "../../APIService";
 import { StreamingRequestResultDTO } from "../../../dist/api";
 import { CONFIG_BACKEND } from "../../config";
+import { APIService } from "../../services/APIService";
 
 @Injectable
 export class VideoStreamComponent extends Component
@@ -69,7 +69,7 @@ export class VideoStreamComponent extends Component
         const tile = response.data.find(x => x.title === "thumb_tiles");
         if(tile !== undefined)
         {
-            const response2 = await this.apiService.files._any_.versions.blob.get(this.fileId, { blobId: tile.blobId });
+            const response2 = await this.apiService.files._any_.versions.blob.get(this.fileId, { blobId: tile.versionBlobId });
             if(response2.statusCode !== 200)
                 throw new Error("TODO: implement me");
             this.tile = await this.ReadBlob(response2.data, "image/jpg");

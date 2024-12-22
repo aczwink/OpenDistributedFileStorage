@@ -16,16 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { BootstrapIcon, FileDownloadService, JSX_CreateElement, Use, UseAPI, UseRouteParameter } from "acfrontend";
-import { APIService } from "../APIService";
+import { BootstrapIcon, JSX_CreateElement, Use, UseAPI, UseRouteParameter } from "acfrontend";
 import { FileRevision } from "../../dist/api";
+import { APIService } from "../services/APIService";
+import { DownloadFileUsingProgressPopup } from "./DownloadFileUsingProgressPopup";
 
 async function OnDownloadFileRevision(fileId: number, rev: FileRevision)
 {
-    const response = await Use(APIService).files._any_.revisions.blob.get(fileId, { blobId: rev.blobId });
-    if(response.statusCode !== 200)
-        throw new Error("TODO: implement me");
-    Use(FileDownloadService).DownloadBlobAsFile(response.data, "TODO:revision_file_name");
+    DownloadFileUsingProgressPopup("TODO:revision_file_name", progressTracker => Use(APIService).files._any_.revisions.blob.get(fileId, { blobId: rev.blobId }, { progressTracker }));
 }
 
 function FileRevisionsTable(input: { fileId: number; revisions: FileRevision[] })

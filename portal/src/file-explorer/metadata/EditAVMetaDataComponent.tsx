@@ -18,7 +18,7 @@
 
 import { BootstrapIcon, FormField, JSX_CreateElement, LineEdit, PushButton, Router, TextArea, Use, UseAPI, UseDeferredAPI, UseRouteParameter, UseState } from "acfrontend";
 import { AudioMetadataTags } from "../../../dist/api";
-import { APIService } from "../../APIService";
+import { APIService } from "../../services/APIService";
 
 function FormComponent(input: { containerId: number; fileId: number; audioTags: AudioMetadataTags; })
 {

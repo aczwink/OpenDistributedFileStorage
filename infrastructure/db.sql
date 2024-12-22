@@ -108,10 +108,12 @@ DROP TABLE IF EXISTS `blobs_versions`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `blobs_versions` (
   `blobId` int(10) unsigned NOT NULL,
+  `versionBlobId` int(10) unsigned NOT NULL,
   `title` varchar(100) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-  PRIMARY KEY (`blobId`,`title`),
-  KEY `files_versions_blobId` (`blobId`),
-  CONSTRAINT `files_versions_blobId` FOREIGN KEY (`blobId`) REFERENCES `blobs` (`id`)
+  PRIMARY KEY (`blobId`,`versionBlobId`),
+  KEY `files_versions_versionBlobId` (`versionBlobId`),
+  CONSTRAINT `files_versions_blobId` FOREIGN KEY (`blobId`) REFERENCES `blobs` (`id`),
+  CONSTRAINT `files_versions_versionBlobId` FOREIGN KEY (`versionBlobId`) REFERENCES `blobs` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -159,6 +161,39 @@ CREATE TABLE `files` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `fileName` (`containerId`,`filePath`) USING BTREE,
   CONSTRAINT `files_containerId` FOREIGN KEY (`containerId`) REFERENCES `containers` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `files_deleted`
+--
+
+DROP TABLE IF EXISTS `files_deleted`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `files_deleted` (
+  `fileId` int(10) unsigned NOT NULL,
+  `deletionTime` datetime NOT NULL,
+  PRIMARY KEY (`fileId`),
+  CONSTRAINT `files_deleted_fileId` FOREIGN KEY (`fileId`) REFERENCES `files` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `files_locations`
+--
+
+DROP TABLE IF EXISTS `files_locations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `files_locations` (
+  `fileId` int(10) unsigned NOT NULL,
+  `lat` float NOT NULL,
+  `lon` float NOT NULL,
+  `countryCode` char(2) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `osmId` varchar(50) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  PRIMARY KEY (`fileId`),
+  CONSTRAINT `files_locations_fileId` FOREIGN KEY (`fileId`) REFERENCES `files` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -287,4 +322,4 @@ CREATE TABLE `tags` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-12-15 21:19:33
+-- Dump completed on 2024-12-22 22:16:04

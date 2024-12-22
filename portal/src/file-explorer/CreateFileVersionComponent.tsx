@@ -17,9 +17,9 @@
  * */
 
 import { BootstrapIcon, FormField, JSX_CreateElement, PushButton, Router, Select, Use, UseAPI, UseDeferredAPI, UseRouteParameter, UseState } from "acfrontend";
-import { APIService } from "../APIService";
 import { FileMetaDataDTO, StreamingVersionType } from "../../dist/api";
 import { Of } from "acts-util-core";
+import { APIService } from "../services/APIService";
 
 function CreateFileVersionForm(input: { containerId: number; fileId: number; metadata: FileMetaDataDTO })
 {

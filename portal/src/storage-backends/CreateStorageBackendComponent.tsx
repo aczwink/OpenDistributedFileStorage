@@ -17,10 +17,10 @@
  * */
 
 import { BootstrapIcon, DataLink, FormField, JSX_CreateElement, JSX_Fragment, LineEdit, PushButton, Router, Select, Use, UseDeferredAPI, UseState } from "acfrontend";
-import { APIService } from "../APIService";
 import { APIResponse } from "acfrontend/dist/RenderHelpers";
 import { StorageBackendConfig, StorageBackendCreationData, StorageTier } from "../../dist/api";
 import { Of } from "acts-util-core";
+import { APIService } from "../services/APIService";
 
 function CreateDefaultConfig(type: string): StorageBackendConfig
 {

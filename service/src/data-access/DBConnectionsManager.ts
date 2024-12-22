@@ -51,6 +51,12 @@ export class DBConnectionsManager
         return instance.value.CreateAnyConnectionQueryExecutor();
     }
 
+    public async GetFreeConnection()
+    {
+        const instance = await this.GetPoolInstance();
+        return await instance.value.GetFreeConnection();
+    }
+
     //Private variables
     private pool: DBResource<DBConnectionPool> | null;
 

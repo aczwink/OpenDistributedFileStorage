@@ -18,6 +18,9 @@
 
 import "./api/containers";
 import "./api/files";
+import "./api/geocoding";
+import "./api/reporting";
 import "./api/storage-backends";
 import "./api/stream";
 import "./api/tags";
+import "./api/upload";

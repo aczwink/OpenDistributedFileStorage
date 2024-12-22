@@ -87,7 +87,7 @@ export class AccessCounterService
         const filtered = versions.filter(x => (x.title !== "preview") && !x.title.startsWith("thumb_"));
 
         const c1 = revisions.map(x => this.FetchBlobAccessCounts(x.blobId));
-        const c2 = filtered.map(x => this.FetchBlobAccessCounts(x.blobId));
+        const c2 = filtered.map(x => this.FetchBlobAccessCounts(x.versionBlobId));
 
         return this.Average(c1.concat(c2));
     }

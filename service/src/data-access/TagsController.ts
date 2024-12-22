@@ -19,6 +19,18 @@
 import { Injectable } from "acts-util-node";
 import { DBConnectionsManager } from "./DBConnectionsManager";
 
+interface GeoLocation
+{
+    countryCode: string;
+    lat: number;
+    lon: number;
+}
+
+export interface GeoLocationWithSource extends GeoLocation
+{
+    osmId: string | null;
+}
+
 @Injectable
 export class TagsController
 {
@@ -27,6 +39,27 @@ export class TagsController
     }
 
     //Public methods
+    public async QueryAllLocations(containerId: number)
+    {
+        const query = `
+        SELECT fl.countryCode, fl.lat, fl.lon
+        FROM files_locations fl
+        INNER JOIN files f
+            ON f.id = fl.fileId
+        WHERE f.containerId = ?
+        `;
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const rows = await conn.Select<GeoLocation>(query, containerId);
+        return rows;
+    }
+
+    public async QueryFileLocation(fileId: number)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const row = await conn.SelectOne<GeoLocationWithSource>("SELECT countryCode, lat, lon, osmId FROM files_locations WHERE fileId = ?", fileId);
+        return row;
+    }
+
     public async QueryFileTags(fileId: number)
     {
         const query = `
@@ -54,6 +87,20 @@ export class TagsController
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         const rows = await conn.Select("SELECT tag FROM tags WHERE containerId = ? AND tag LIKE ?", containerId, "%" + substring + "%");
         return rows.map(row => row.tag as string);
+    }
+
+    public async UpdateFileLocation(fileId: number, location: GeoLocationWithSource | null)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        await conn.DeleteRows("files_locations", "fileId = ?", fileId);
+
+        if(location !== null)
+        {
+            await conn.InsertRow("files_locations", {
+                fileId,
+                ...location
+            });
+        }
     }
 
     public async UpdateFileTags(fileId: number, tags: string[])

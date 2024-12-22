@@ -16,16 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { Component, InfoMessageManager, Injectable, JSX_CreateElement, ProgressSpinner, RouteParamProperty, Router } from "acfrontend";
-import { APIService } from "../APIService";
+import { Component, InfoMessageManager, Injectable, JSX_CreateElement, PopupManager, ProgressSpinner, RouteParamProperty, Router } from "acfrontend";
 import { DirectoryViewComponent } from "./DirectoryViewComponent";
+import { APIService } from "../services/APIService";
+import { UploadFileModal } from "./UploadFileModal";
 
 let dragCounter = 0;
 
 @Injectable
 export class FileExplorerComponent extends Component
 {
-    constructor(private apiService: APIService, private infoMessageManager: InfoMessageManager, private router: Router,
+    constructor(private apiService: APIService, private infoMessageManager: InfoMessageManager, private router: Router, private popupManager: PopupManager,
         @RouteParamProperty("containerId") private containerId: number)
     {
         super();
@@ -56,53 +57,23 @@ export class FileExplorerComponent extends Component
             this.dirPath = "/";
     }
 
-    private async UploadFile(file: File)
-    {
-        console.log("Uploading file", file.name);
-        const response = await this.apiService.containers._any_.files.post(this.containerId, {
-            parentPath: this.dirPath,
-            file
-        });
-        console.log("Finished", file.name, "result: ", response);
-        switch(response.statusCode)
-        {
-            case 204:
-                return true;
-            case 409:
-                this.infoMessageManager.ShowMessage(<p>{file.name} was not uploaded because it exists already!</p>, { type: "warning" });
-                break;
-            default:
-                this.infoMessageManager.ShowMessage(<p>Failed uploading file {file.name}</p>, { type: "danger" });
-        }
-
-        return false;
-    }
-
     private async UploadFiles(files: File[])
     {
         this.loading = true;
 
-        if(files.length === 1)
+        const context = this;
+        function OnFinish(success: boolean)
         {
-            const result = await this.UploadFile(files[0]);
-            if(result)
-                this.infoMessageManager.ShowMessage(<p>File uploaded successfully. You will see it soon in the explorer...</p>, { type: "success" });
-        }
-        else
-        {
-            let okCount = 0;
-            for (const file of files)
+            if(success)
             {
-                const result = await this.UploadFile(file);    
-                if(result)
-                    okCount++;
+                if(files.length === 1)
+                    context.infoMessageManager.ShowMessage(<p>File uploaded successfully. You will see it soon in the explorer...</p>, { type: "success" });
+                else
+                    context.infoMessageManager.ShowMessage(<p>{files.length} files uploaded successfully. You will see them soon in the explorer...</p>, { type: "success" });
             }
-
-            if(okCount === files.length)
-                this.infoMessageManager.ShowMessage(<p>{okCount} files uploaded successfully. You will see them soon in the explorer...</p>, { type: "success" });
-            else
-                this.infoMessageManager.ShowMessage(<p>{files.length - okCount} files of {files.length} could not be uploaded successfully.</p>, { type: "danger" });
         }
+        this.popupManager.OpenModal(<UploadFileModal context={{ type: "newfile", containerId: this.containerId, parentPath: this.dirPath }} files={files} onFinish={OnFinish} />, { className: "fade show d-block" });
+        //this.infoMessageManager.ShowMessage(<p>{files.length - okCount} files of {files.length} could not be uploaded successfully.</p>, { type: "danger" });
 
         this.loading = false;
     }

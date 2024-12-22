@@ -16,14 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { APIController, Auth, Body, BodyProp, Common, Forbidden, FormField, Get, NotFound, Path, Post, Put, Query, Request, Security } from "acts-util-apilib";
+import { APIController, Auth, BadRequest, Body, BodyProp, Common, Forbidden, Get, NotFound, Ok, Path, Post, Put, Query, Request, Security } from "acts-util-apilib";
 import { AccessToken, OIDC_API_SCHEME, SCOPE_FILES_WRITE } from "../api_security";
 import { ContainersController } from "../data-access/ContainersController";
 import { FileMetaData, FilesController } from "../data-access/FilesController";
 import { FileDownloadService } from "../services/FileDownloadService";
-import { FileUploadService } from "../services/FileUploadService";
 import { Of } from "acts-util-core";
-import { TagsController } from "../data-access/TagsController";
+import { GeoLocationWithSource, TagsController } from "../data-access/TagsController";
 import { BlobVersionsController } from "../data-access/BlobVersionsController";
 import { StreamingVersionType } from "../BackgroundJob";
 import { JobOrchestrationService } from "../services/JobOrchestrationService";
@@ -34,9 +33,11 @@ import { AccessCounterService } from "../services/AccessCounterService";
 import { BlobsController } from "../data-access/BlobsController";
 import { AudioMetadataTaggingService, AudioMetadataTags } from "../services/AudioMetadataTaggingService";
 import { ImageMetadataService } from "../services/ImageMetadataService";
+import { GeocodingService } from "../services/GeocodingService";
 
 interface FileMetaDataDTO extends FileMetaData
-{   
+{
+    location?: GeoLocationWithSource;
     tags: string[];
 }
 
@@ -54,10 +55,10 @@ interface StreamingRequestResultDTO
 class _api_
 {
     constructor(private containersController: ContainersController, private filesController: FilesController, private fileDownloadService: FileDownloadService,
-        private fileUploadService: FileUploadService, private tagsController: TagsController, private fileVersionsController: BlobVersionsController,
+        private tagsController: TagsController, private fileVersionsController: BlobVersionsController,
         private jobOrchestrationService: JobOrchestrationService, private streamingService: StreamingService, private ffprobeService: FFProbeService,
         private accessCounterService: AccessCounterService, private blobsController: BlobsController, private audioMetadataService: AudioMetadataTaggingService,
-        private imageMetadataService: ImageMetadataService
+        private imageMetadataService: ImageMetadataService, private geocodingService: GeocodingService
     )
     {
     }
@@ -86,6 +87,7 @@ class _api_
     )
     {
         return Of<FileMetaDataDTO>({
+            location: await this.tagsController.QueryFileLocation(file.id),
             tags: await this.tagsController.QueryFileTags(file.id),
             ...file
         });
@@ -96,11 +98,28 @@ class _api_
     public async UpdateFileMetadata(
         @Common fileMetaData: FileMetaData,
         @BodyProp tags: string[],
-        @BodyProp filePath: string
+        @BodyProp filePath: string,
+        @BodyProp osmLocationId: string | null,
     )
     {
         await this.filesController.UpdatePath(fileMetaData.id, filePath);
         await this.tagsController.UpdateFileTags(fileMetaData.id, tags);
+
+        if(osmLocationId === null)
+            await this.tagsController.UpdateFileLocation(fileMetaData.id, null);
+        else
+        {
+            const location = await this.geocodingService.ResolveLocation(osmLocationId);
+            if(location === undefined)
+                return BadRequest("illegal location id");
+
+            await this.tagsController.UpdateFileLocation(fileMetaData.id, {
+                countryCode: location.address.country_code.toUpperCase(),
+                lat: parseFloat(location.latitude),
+                lon: parseFloat(location.longitude),
+                osmId: osmLocationId
+            });
+        }
     }
 
     @Get("access")
@@ -119,7 +138,10 @@ class _api_
     )
     {
         const rev = await this.filesController.QueryNewestRevision(file.id);
-        return this.fileDownloadService.DownloadBlob(rev!.blobId, accessToken.sub);
+        const result = await this.fileDownloadService.DownloadBlob(rev!.blobId, accessToken.sub);
+        return Ok(result.stream, {
+            "Content-Length": result.size,
+        });
     }
 
     @Get("meta-file-manager")
@@ -178,23 +200,16 @@ class _api_
     }
 
     @Get("revisions/blob")
-    public RequestFileRevisionBlob(
+    public async RequestFileRevisionBlob(
         @Common file: FileMetaData,
         @Query blobId: number,
         @Auth("jwt") accessToken: AccessToken
     )
     {
-        return this.fileDownloadService.DownloadBlob(blobId, accessToken.sub);
-    }
-
-    @Post("revisions")
-    @Security(OIDC_API_SCHEME, [SCOPE_FILES_WRITE])
-    public async UploadFileRevision(
-        @Common fileMetaData: FileMetaData,
-        @FormField file: HTTP.UploadedFileRef
-    )
-    {
-        await this.fileUploadService.CreateUploadRevisionJob(fileMetaData.id, file.filePath);
+        const result = await this.fileDownloadService.DownloadBlob(blobId, accessToken.sub);
+        return Ok(result.stream, {
+            "Content-Length": result.size,
+        });
     }
 
     @Post("stream")
@@ -210,7 +225,7 @@ class _api_
         const versions = await this.fileVersionsController.QueryVersions(blobId);
 
         const options = versions.Values().Filter(x => x.title.startsWith("stream_")).Map(x => ({
-            blobId: x.blobId,
+            blobId: x.versionBlobId,
             mediaType: "video/mp4",
             quality: x.title.substring("stream_".length) as StreamingVersionType,
         })).ToArray();
@@ -246,18 +261,21 @@ class _api_
     }
 
     @Get("versions/blob")
-    public RequestFileVersionBlob(
+    public async RequestFileVersionBlob(
         @Common file: FileMetaData,
         @Query blobId: number,
         @Auth("jwt") accessToken: AccessToken
     )
     {
-        return this.fileDownloadService.DownloadBlob(blobId, accessToken.sub);
+        const result = await this.fileDownloadService.DownloadBlob(blobId, accessToken.sub);
+        return Ok(result.stream, {
+            "Content-Length": result.size,
+        });
     }
 
     @Post("versions")
     @Security(OIDC_API_SCHEME, [SCOPE_FILES_WRITE])
-    public async UploadFileVersion(
+    public async RequestFileVersionCreation(
         @Common fileMetaData: FileMetaData,
         @BodyProp type: StreamingVersionType,
     )

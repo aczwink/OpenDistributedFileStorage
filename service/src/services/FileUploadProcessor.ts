@@ -17,7 +17,6 @@
  * */
 import crypto from "crypto";
 import fs from "fs";
-import path from "path";
 import { Readable } from 'stream';
 import { Injectable } from "acts-util-node";
 import { BlobsController } from "../data-access/BlobsController";
@@ -26,47 +25,18 @@ import { CONST_BLOCKSIZE } from "../constants";
 import { FilesController } from "../data-access/FilesController";
 import { JobOrchestrationService } from "./JobOrchestrationService";
 import { StreamToBuffer } from "acts-util-node/dist/fs/Util";
+import { FileGeocodingService } from "./FileGeocodingService";
 
 @Injectable
-export class FileUploadService
+export class FileUploadProcessor
 {
     constructor(private blobsController: BlobsController, private storageBackendsManager: StorageBlocksManager, private filesController: FilesController,
-        private jobOrchestrationService: JobOrchestrationService
+        private jobOrchestrationService: JobOrchestrationService, private fileGeocodingService: FileGeocodingService
     )
     {
     }
 
     //Public methods
-    public async CreateUploadJob(containerId: number, parentPath: string, originalName: string, mediaType: string, uploadPath: string)
-    {
-        const containerPath = path.join(parentPath, originalName);
-        const id = await this.filesController.FindIdByName(containerId, containerPath);
-        if(id !== undefined)
-            return "error_file_exists";
-
-        this.jobOrchestrationService.ScheduleJob({
-            type: "upload-file",
-            containerId,
-            containerPath,
-            mediaType,
-            uploadPath
-        });
-    }
-
-    public async CreateUploadRevisionJob(fileId: number, uploadPath: string)
-    {
-        const fileMetaData = await this.filesController.Query(fileId);
-
-        this.jobOrchestrationService.ScheduleJob({
-            type: "upload-file",
-            containerId: fileMetaData!.containerId,
-            containerPath: fileMetaData!.filePath,
-            fileId,
-            mediaType: fileMetaData!.mediaType,
-            uploadPath
-        });
-    }
-
     public async UploadBlobFromDisk(filePath: string)
     {
         return await this.ProcessFile(filePath);
@@ -83,6 +53,8 @@ export class FileUploadService
 
         if(result.isNew)
             this.OnNewFileBlobUploaded(result.blobId, mediaType);
+        else
+            await this.fileGeocodingService.TrySetGeoLocationOnAssociatedFiles(result.blobId);
 
         await fs.promises.unlink(uploadPath);
     }
@@ -97,6 +69,8 @@ export class FileUploadService
             const md = await this.filesController.Query(fileId);
             this.OnNewFileBlobUploaded(result.blobId, md!.mediaType);
         }
+        else
+            await this.fileGeocodingService.TrySetGeoLocationOnAssociatedFiles(result.blobId);
     }
 
     //Private methods

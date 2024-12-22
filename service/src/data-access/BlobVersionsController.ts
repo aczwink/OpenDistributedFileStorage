@@ -21,7 +21,7 @@ import { DBConnectionsManager } from "./DBConnectionsManager";
 
 interface BlobVersion
 {
-    blobId: number;
+    versionBlobId: number;
     title: string;
 }
 
@@ -33,11 +33,12 @@ export class BlobVersionsController
     }
 
     //Public methods
-    public async AddVersion(blobId: number, title: string)
+    public async AddVersion(blobId: number, versionBlobId: number, title: string)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         await conn.InsertRow("blobs_versions", {
             blobId,
+            versionBlobId,
             title
         });
     }
@@ -45,6 +46,6 @@ export class BlobVersionsController
     public async QueryVersions(blobId: number)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        return await conn.Select<BlobVersion>("SELECT blobId, title FROM `blobs_versions` WHERE blobId = ?", blobId);
+        return await conn.Select<BlobVersion>("SELECT versionBlobId, title FROM `blobs_versions` WHERE blobId = ?", blobId);
     }
 }

@@ -17,7 +17,7 @@
  * */
 
 import { BootstrapIcon, Component, Injectable, JSX_CreateElement, PopupManager } from "acfrontend";
-import { APIService } from "../APIService";
+import { APIService } from "../services/APIService";
 
 @Injectable
 export class ThumbnailComponent extends Component<{ fileId: number; mediaType: string; }>
@@ -112,7 +112,7 @@ export class ThumbnailComponent extends Component<{ fileId: number; mediaType: s
             {
                 const thumbIndex = Math.floor(thumbs.length / 2);
 
-                const response2 = await this.apiService.files._any_.versions.blob.get(this.input.fileId, { blobId: thumbs[thumbIndex].blobId });
+                const response2 = await this.apiService.files._any_.versions.blob.get(this.input.fileId, { blobId: thumbs[thumbIndex].versionBlobId });
                 if(response2.statusCode !== 200)
                     throw new Error("TODO: implement me");
                 this.thumb = await this.ReadBlob(response2.data, "image/jpg");
@@ -124,7 +124,7 @@ export class ThumbnailComponent extends Component<{ fileId: number; mediaType: s
             const tile = versions?.find(x => x.title === "thumb_tiles");
             if(tile !== undefined)
             {
-                const response = await this.apiService.files._any_.versions.blob.get(this.input.fileId, { blobId: tile.blobId });
+                const response = await this.apiService.files._any_.versions.blob.get(this.input.fileId, { blobId: tile.versionBlobId });
                 if(response.statusCode !== 200)
                     throw new Error("TODO: implement me");
                 this.tile = await this.ReadBlob(response.data, "image/jpg");
@@ -133,7 +133,7 @@ export class ThumbnailComponent extends Component<{ fileId: number; mediaType: s
             const preview = versions?.find(x => x.title === "preview");
             if(preview !== undefined)
             {
-                const response = await this.apiService.files._any_.versions.blob.get(this.input.fileId, { blobId: preview.blobId });
+                const response = await this.apiService.files._any_.versions.blob.get(this.input.fileId, { blobId: preview.versionBlobId });
                 if(response.statusCode !== 200)
                     throw new Error("TODO: implement me");
                 this.preview = await this.ReadBlob(response.data, "video/mp4");

@@ -15,7 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
-import { Injectable } from "acts-util-node";
+import fs from "fs";
+import { Readable } from "stream";
+import { Injectable, Promisify } from "acts-util-node";
 import { BlobsController, BlobStorageInfoEntry } from "../data-access/BlobsController";
 import { StorageBlocksManager } from "./StorageBlocksManager";
 import { AccessCounterService } from "./AccessCounterService";
@@ -32,10 +34,32 @@ export class FileDownloadService
     {
         this.accessCounterService.AddBlobAccess(userId, blobId);
 
-        const entries = await this.blobsController.QueryBlobStorageInfo(blobId);
-        const buffers = await entries.Values().Map(this.DownloadPart.bind(this)).PromiseAll();
+        const size = await this.blobsController.QueryBlobSize(blobId);
 
-        return Buffer.concat(buffers);
+        const entries = await this.blobsController.QueryBlobStorageInfo(blobId);
+        let index = 0;
+        const context = this;
+        const stream = new Readable({
+            async read()
+            {
+                const entry = entries[index++];
+                const next = (entry === undefined) ? null : await context.DownloadPart(entry);
+                this.push(next);
+            },
+        })
+
+        return {
+            stream,
+            size: size!
+        };
+    }
+
+    public async DownloadBlobOntoLocalFileSystem(blobId: number, userId: string, filePath: string)
+    {
+        const result = await this.DownloadBlob(blobId, userId);
+        
+        const pipe = result.stream.pipe(fs.createWriteStream(filePath));
+        await Promisify(pipe);
     }
 
     public async DownloadBlobSlice(blobId: number, offset: number, length: number)

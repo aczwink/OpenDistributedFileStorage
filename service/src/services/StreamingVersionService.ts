@@ -22,14 +22,14 @@ import { StreamingVersionType } from "../BackgroundJob";
 import { FileDownloadService } from "./FileDownloadService";
 import { CommandExecutor } from "./CommandExecutor";
 import { BlobVersionsController } from "../data-access/BlobVersionsController";
-import { FileUploadService } from "./FileUploadService";
+import { FileUploadProcessor } from "./FileUploadProcessor";
 import { CONST_SERVICE_USER_FAKEID } from "../constants";
 
 @Injectable
 export class StreamingVersionService
 {
     constructor(private fileDownloadService: FileDownloadService, private commandExecutor: CommandExecutor,
-        private blobVersionsController: BlobVersionsController, private fileUploadService: FileUploadService
+        private blobVersionsController: BlobVersionsController, private fileUploadService: FileUploadProcessor
     )
     {
     }
@@ -42,11 +42,10 @@ export class StreamingVersionService
         {
             tmpDir = await fs.promises.mkdtemp("/tmp/oos");
 
-            const blob = await this.fileDownloadService.DownloadBlob(blobId, CONST_SERVICE_USER_FAKEID);
             const inputPath = path.join(tmpDir, "__input");
-            await fs.promises.writeFile(inputPath, blob);
+            await this.fileDownloadService.DownloadBlobOntoLocalFileSystem(blobId, CONST_SERVICE_USER_FAKEID, inputPath);
 
-            await this.Process(inputPath, targetType);
+            await this.Process(blobId, inputPath, targetType);
         }
         finally
         {
@@ -67,7 +66,7 @@ export class StreamingVersionService
         }
     }
 
-    private async Process(inputPath: string, targetType: StreamingVersionType)
+    private async Process(blobId: number, inputPath: string, targetType: StreamingVersionType)
     {
         const dirPath = path.dirname(inputPath);
         const targetPath = path.join(dirPath, "__output.mp4");
@@ -101,6 +100,6 @@ export class StreamingVersionService
         await this.commandExecutor.Execute(command);
 
         const result = await this.fileUploadService.UploadBlobFromDisk(targetPath);
-        await this.blobVersionsController.AddVersion(result.blobId, "stream_" + targetType);
+        await this.blobVersionsController.AddVersion(blobId, result.blobId, "stream_" + targetType);
     }
 }

@@ -17,18 +17,18 @@
  * */
 
 import { BootstrapIcon, FileDownloadService, JSX_CreateElement, JSX_Fragment, RouterButton, Use, UseAPI, UseRouteParameter } from "acfrontend";
-import { APIService } from "../APIService";
-import { FileVersion } from "../../dist/api";
+import { BlobVersion } from "../../dist/api";
+import { APIService } from "../services/APIService";
 
-async function OnDownloadFileVersion(fileId: number, rev: FileVersion)
+async function OnDownloadFileVersion(fileId: number, rev: BlobVersion)
 {
-    const response = await Use(APIService).files._any_.versions.blob.get(fileId, { blobId: rev.blobId });
+    const response = await Use(APIService).files._any_.versions.blob.get(fileId, { blobId: rev.versionBlobId });
     if(response.statusCode !== 200)
         throw new Error("TODO: implement me");
     Use(FileDownloadService).DownloadBlobAsFile(response.data, "TODO:version_file_name");
 }
 
-function FileVersionsTable(input: { containerId: number; fileId: number; versions: FileVersion[] })
+function FileVersionsTable(input: { containerId: number; fileId: number; versions: BlobVersion[] })
 {
     return <>
         <table className="table table-sm table-striped">

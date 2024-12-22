@@ -17,9 +17,9 @@
  * */
 
 import { JSX_CreateElement, Use, UseAPI, UseRouteParameter } from "acfrontend";
-import { APIService } from "../APIService";
 import { FileMetaDataDTO } from "../../dist/api";
 import { VideoStreamComponent } from "./content/VideoStreamComponent";
+import { APIService } from "../services/APIService";
 
 function FileContentShower(input: { metadata: FileMetaDataDTO })
 {

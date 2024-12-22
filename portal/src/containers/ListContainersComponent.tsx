@@ -17,8 +17,8 @@
  * */
 
 import { BootstrapIcon, JSX_CreateElement, JSX_Fragment, RouterButton, Use, UseAPI } from "acfrontend";
-import { APIService } from "../APIService";
 import { ContainerProperties } from "../../dist/api";
+import { APIService } from "../services/APIService";
 
 function ContainersList(input: { containers: ContainerProperties[] })
 {

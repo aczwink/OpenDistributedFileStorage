@@ -31,7 +31,8 @@ import { ThumbnailService } from "./services/ThumbnailService";
 import { StreamingService } from "./services/StreamingService";
 import { AccessCounterService } from "./services/AccessCounterService";
 import { StorageBlocksManager } from "./services/StorageBlocksManager";
-import { FileUploadService } from "./services/FileUploadService";
+import { FileUploadProcessor } from "./services/FileUploadProcessor";
+import { GarbageColletor } from "./services/GarbageColletor";
 
 const crashDetectionPath = CONFIG_ROOTDIR + "/crash_check";
 
@@ -97,6 +98,9 @@ async function BootstrapServer()
     {
         switch(job.type)
         {
+            case "collect-garbage":
+                await GlobalInjector.Resolve(GarbageColletor).Execute();
+                break;
             case "compute-streaming-version":
                 await GlobalInjector.Resolve(StreamingVersionService).Compute(job.blobId, job.targetType);
                 break;
@@ -107,7 +111,7 @@ async function BootstrapServer()
                 await GlobalInjector.Resolve(StorageBlocksManager).Replicate(job.storageBlockId);
                 break;
             case "upload-file":
-                await GlobalInjector.Resolve(FileUploadService).UploadFileFromDisk(job.containerId, job.containerPath, job.mediaType, job.uploadPath, job.fileId);
+                await GlobalInjector.Resolve(FileUploadProcessor).UploadFileFromDisk(job.containerId, job.containerPath, job.mediaType, job.uploadPath, job.fileId);
                 break;
         }
     };

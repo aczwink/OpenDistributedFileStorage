@@ -17,8 +17,8 @@
  * */
 
 import { UseRouteParameter, UseAPI, Use, JSX_CreateElement, JSX_Fragment, BootstrapIcon } from "acfrontend";
-import { APIService } from "../APIService";
 import { AccessStatistics, StorageTier } from "../../dist/api";
+import { APIService } from "../services/APIService";
 
 function RenderStorageTier(storageTier: StorageTier)
 {

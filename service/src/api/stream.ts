@@ -20,7 +20,7 @@ import { APIController, Forbidden, Get, Header, Query, Request } from "acts-util
 import { HTTP } from "acts-util-node";
 import { StreamingService } from "../services/StreamingService";
 import { FileDownloadService } from "../services/FileDownloadService";
-import { PartialContent } from "acts-util-apilib/dist/Responses";
+import { Ok, PartialContent } from "acts-util-apilib/dist/Responses";
 import { BlobsController } from "../data-access/BlobsController";
 
 @APIController("stream")
@@ -44,8 +44,10 @@ class _api_
 
         if(Range === undefined)
         {
-            const blob = await this.fileDownloadService.DownloadBlob(blobId, userId);
-            return blob;
+            const result = await this.fileDownloadService.DownloadBlob(blobId, userId);
+            return Ok(result.stream, {
+                "Content-Length": result.size,
+            });
         }
 
         this.streamingService.InformAboutPartialAccess(streamingKey, blobId, userId);

@@ -40,6 +40,19 @@ export class LockedStorageBackend implements StorageBackend
         }
     }
 
+    public async DeleteFile(filePath: string): Promise<void>
+    {
+        const locked = await this.storageBackend.Lock();
+        try
+        {
+            return await locked.value.DeleteFile(filePath);
+        }
+        finally
+        {
+            locked.Release();
+        }
+    }
+
     public async CreateDirectoryIfNotExisting(dirPath: string): Promise<void>
     {
         const locked = await this.storageBackend.Lock();

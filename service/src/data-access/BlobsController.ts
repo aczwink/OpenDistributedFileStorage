@@ -86,6 +86,13 @@ export class BlobsController
         });
     }
 
+    public async DeleteBlob(blobId: number)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        await conn.DeleteRows("blobs_blocks", "blobId = ?", blobId);
+        await conn.DeleteRows("blobs", "id = ?", blobId);
+    }
+
     public async FindBlobByHash(sha256sum: string)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
@@ -105,6 +112,26 @@ export class BlobsController
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         const row = await conn.SelectOne<BlockBlob>("SELECT size, sha256sum FROM blobblocks WHERE id = ?", id);
         return row;
+    }
+
+    public async QueryBlobStoredSize(blobId: number)
+    {
+        const query = `
+        SELECT SUM(t.size) AS total
+        FROM (
+            SELECT size
+            FROM blobs_blocks bsb
+            INNER JOIN blobblocks bbs
+            ON bsb.blobBlockId = bbs.id
+            WHERE bsb.blobId = ?
+            GROUP BY bsb.blobBlockId
+        ) t
+        `;
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const row = await conn.SelectOne(query, blobId);
+        if(row === undefined)
+            return undefined;
+        return parseInt(row.total);
     }
 
     public async QueryBlobSize(blobId: number)

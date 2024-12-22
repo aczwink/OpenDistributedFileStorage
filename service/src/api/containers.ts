@@ -16,11 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { APIController, Auth, Body, Common, Conflict, Forbidden, FormField, Get, NotFound, Path, Post, Query, Security } from "acts-util-apilib";
-import { AccessToken, OIDC_API_SCHEME, SCOPE_ADMIN, SCOPE_FILES_WRITE } from "../api_security";
+import { APIController, Auth, Body, Common, Forbidden, Get, NotFound, Path, Post, Query, Security } from "acts-util-apilib";
+import { AccessToken, OIDC_API_SCHEME, SCOPE_ADMIN } from "../api_security";
 import { ContainerProperties, ContainersController } from "../data-access/ContainersController";
-import { HTTP } from "acts-util-node";
-import { FileUploadService } from "../services/FileUploadService";
 import { FileOverviewData, FilesController } from "../data-access/FilesController";
 import { TagsController } from "../data-access/TagsController";
 import { Of } from "acts-util-core";
@@ -87,6 +85,14 @@ class _api2_
         return this.containersController.Query(containerId);
     }
 
+    @Get("locations")
+    public async RequestLocations(
+        @Path containerId: number,
+    )
+    {
+        return this.tagsController.QueryAllLocations(containerId);
+    }
+
     @Get("search")
     public async SearchForFiles(
         @Path containerId: number,
@@ -112,7 +118,7 @@ class _api2_
 @APIController("containers/{containerId}/files")
 class _api3_
 {
-    constructor(private containersController: ContainersController, private fileUploadService: FileUploadService, private filesController: FilesController)
+    constructor(private containersController: ContainersController, private filesController: FilesController)
     {
     }
 
@@ -127,20 +133,6 @@ class _api3_
             return NotFound("container not found");
         if(!accessToken.containers.includes(container.requiredClaim))
             return Forbidden("you don't have access to that container");
-    }
-
-    @Post()
-    @Security(OIDC_API_SCHEME, [SCOPE_FILES_WRITE])
-    public async Create(
-        @Path containerId: number,
-        @FormField parentPath: string,
-        @FormField file: HTTP.UploadedFileRef
-    )
-    {
-        const result = await this.fileUploadService.CreateUploadJob(containerId, parentPath, file.originalName, file.mediaType, file.filePath);
-        if(result === "error_file_exists")
-            return Conflict("file exists already");
-        return result;
     }
 
     @Get()

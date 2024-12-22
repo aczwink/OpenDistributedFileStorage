@@ -59,6 +59,13 @@ export class StorageBlocksController
         return storageBlockId;
     }
 
+    public async DeleteBlock(storageBlockId: number)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        await conn.DeleteRows("storageblocks_residual", "storageBlockId = ?", storageBlockId);
+        await conn.DeleteRows("storageblocks", "id = ?", storageBlockId);
+    }
+
     public async FindFastBackendIdThatHasBlock(storageBlockId: number)
     {
         const query = `
@@ -118,6 +125,12 @@ export class StorageBlocksController
             await conn.DeleteRows("storageblocks_residual", "storageBlockId = ?", storageBlockId);
         else
             await conn.UpdateRows("storageblocks_residual", { leftSize: newLeftSize }, "storageBlockId = ?", storageBlockId);
+    }
+
+    public async RemoveBlockLocation(storageBlockId: number, storageBackendId: number)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        await conn.DeleteRows("storagebackends_storageblocks", "storageBackendId = ? AND storageBlockId = ?", storageBackendId, storageBlockId);
     }
 
     public async UpdateBlockLocation(storageBlockId: number, storageBackendId: number)

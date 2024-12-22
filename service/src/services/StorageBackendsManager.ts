@@ -86,6 +86,11 @@ export class StorageBackendsManager
         return ObjectExtensions.Values(this.backends).NotUndefined().Filter(x => !storageBackendIds.includes(x.id)).OrderBy(x => x.storageTier).Take(CONST_STORAGEBLOCKS_MAX_REPLICATION);
     }
 
+    public GetBackendById(storageBackendId: number)
+    {
+        return this.backends[storageBackendId];
+    }
+
     public async Reload()
     {
         const backends = await this.storageBackendsController.QueryAll();

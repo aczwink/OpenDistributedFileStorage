@@ -35,6 +35,11 @@ export abstract class rcloneBasedBackend implements StorageBackend
             await this.Callrclone("mkdir", [], dirPath);
     }
 
+    public async DeleteFile(filePath: string): Promise<void>
+    {
+        await this.Callrclone("deletefile", [], filePath);
+    }
+
     public async ReadFile(filePath: string): Promise<Buffer>
     {
         const cmdExecutor = GlobalInjector.Resolve(CommandExecutor);
@@ -64,7 +69,7 @@ export abstract class rcloneBasedBackend implements StorageBackend
     }
 
     //Private methods
-    private async BuildCommand(command: "cat" | "ls" | "mkdir" | "rcat", args: string[], remotePath: string)
+    private async BuildCommand(command: "deletefile" | "cat" | "ls" | "mkdir" | "rcat", args: string[], remotePath: string)
     {
         const fullPath = path.join(this.rootPath, remotePath);
         const cmd = [
@@ -76,7 +81,7 @@ export abstract class rcloneBasedBackend implements StorageBackend
         return cmd;
     }
 
-    private async Callrclone(command: "ls" | "mkdir" | "rcat", args: string[], remotePath: string, stdin?: Buffer)
+    private async Callrclone(command: "deletefile" | "ls" | "mkdir" | "rcat", args: string[], remotePath: string, stdin?: Buffer)
     {
         const cmdExecutor = GlobalInjector.Resolve(CommandExecutor);
 

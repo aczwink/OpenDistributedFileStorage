@@ -17,8 +17,8 @@
  * */
 
 import { UseAPI, Use, JSX_CreateElement, BootstrapIcon, Anchor } from "acfrontend";
-import { APIService } from "../APIService";
 import { Container } from "../../dist/api";
+import { APIService } from "../services/APIService";
 
 function ContainersList(input: { containers: Container[] })
 {

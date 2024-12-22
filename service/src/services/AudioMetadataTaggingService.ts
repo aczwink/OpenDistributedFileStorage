@@ -23,7 +23,7 @@ import { FFProbe_MediaInfo } from "./FFProbeService";
 import { FilesController } from "../data-access/FilesController";
 import { FileDownloadService } from "./FileDownloadService";
 import { CommandExecutor } from "./CommandExecutor";
-import { FileUploadService } from "./FileUploadService";
+import { FileUploadProcessor } from "./FileUploadProcessor";
 
 export interface AudioMetadataTags
 {
@@ -36,7 +36,7 @@ export interface AudioMetadataTags
 export class AudioMetadataTaggingService
 {
     constructor(private blobsController: BlobsController, private filesController: FilesController, private fileDownloadService: FileDownloadService,
-        private commandExecutor: CommandExecutor, private fileUploadService: FileUploadService
+        private commandExecutor: CommandExecutor, private fileUploadService: FileUploadProcessor
     )
     {
     }
@@ -52,9 +52,8 @@ export class AudioMetadataTaggingService
         {
             tmpDir = await fs.promises.mkdtemp("/tmp/oos");
 
-            const blob = await this.fileDownloadService.DownloadBlob(rev!.blobId, userId);
             const inputPath = path.join(tmpDir, "__input");
-            await fs.promises.writeFile(inputPath, blob);
+            await this.fileDownloadService.DownloadBlobOntoLocalFileSystem(rev!.blobId, userId, inputPath);
 
             await this.Process(fileId, inputPath, fileMetaData!.mediaType, audioMetadataTags);
         }

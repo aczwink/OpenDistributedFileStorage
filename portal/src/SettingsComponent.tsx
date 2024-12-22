@@ -26,6 +26,7 @@ export function SettingsComponent()
                 <ul className="nav nav-pills flex-column">
                     <NavItem route={"/settings/containers"}><BootstrapIcon>eyeglasses</BootstrapIcon> Containers</NavItem>
                     <NavItem route={"/settings/storagebackends"}><BootstrapIcon>eyeglasses</BootstrapIcon> Storage backends</NavItem>
+                    <NavItem route={"/settings/reporting"}><BootstrapIcon>file-text</BootstrapIcon> Reporting</NavItem>
                 </ul>
             </div>
             <div className="col">

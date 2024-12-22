@@ -57,6 +57,19 @@ export class StorageBlocksManager
         return this.DownloadStorageBlockImpl(storageBlockId);
     }
 
+    public async RemoveUnreferencedStorageBlock(storageBlockId: number)
+    {
+        const isResidual = await this.storageBlocksController.IsResidualBlock(storageBlockId);
+        if(isResidual)
+        {
+            const releaser = await this.residualBlocksLock.Lock();
+            await this.DeleteStorageBlock(storageBlockId);
+            releaser.Release();
+        }
+        
+        await this.DeleteStorageBlock(storageBlockId);
+    }
+
     public async Replicate(storageBlockId: number)
     {
         const storageBackendIds = await this.storageBlocksController.QueryBlockLocations(storageBlockId);
@@ -112,6 +125,21 @@ export class StorageBlocksManager
     }
 
     //Private methods
+    private async DeleteStorageBlock(storageBlockId: number)
+    {
+        const storageBackendIds = await this.storageBlocksController.QueryBlockLocations(storageBlockId);
+        for (const storageBackendId of storageBackendIds)
+        {
+            const backend = this.storageBackendsManager.GetBackendById(storageBackendId);
+            if(backend === undefined)
+                return;
+            const storageBlockPath = this.FetchStorageBlockPath(storageBlockId);
+            await backend.instance.DeleteFile(storageBlockPath);
+            await this.storageBlocksController.RemoveBlockLocation(storageBlockId, storageBackendId);
+        }
+        await this.storageBlocksController.DeleteBlock(storageBlockId);
+    }
+
     private async DownloadEncryptedStorageBlock(storageBlockId: number)
     {
         const backend = await this.storageBackendsManager.FindFastestBackendForReading(storageBlockId);

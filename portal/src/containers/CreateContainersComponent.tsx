@@ -17,9 +17,9 @@
  * */
 
 import { BootstrapIcon, FormField, JSX_CreateElement, JSX_Fragment, LineEdit, PushButton, Router, Use, UseDeferredAPI, UseState } from "acfrontend";
-import { APIService } from "../APIService";
 import { APIResponse } from "acfrontend/dist/RenderHelpers";
 import { ContainerProperties } from "../../dist/api";
+import { APIService } from "../services/APIService";
 
 function ContainerFormComponent(input: { saveAPI: (data: ContainerProperties) => Promise<APIResponse<void>>  })
 {

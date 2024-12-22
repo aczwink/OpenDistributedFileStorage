@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
-import { API } from "../dist/api";
 import { APIServiceBase, HTTPService, Injectable, OAuth2TokenManager } from "acfrontend";
-import { CONFIG_BACKEND, CONFIG_OIDC } from "./config";
-import { SCOPE_FILES_WRITE } from "./definitions";
+import { API } from "../../dist/api";
+import { CONFIG_BACKEND, CONFIG_OIDC } from "../config";
+import { SCOPE_FILES_WRITE } from "../definitions";
 
 @Injectable
 export class APIService extends API

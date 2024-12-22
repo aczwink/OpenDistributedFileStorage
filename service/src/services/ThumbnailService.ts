@@ -20,19 +20,20 @@ import path from "path";
 import { Injectable } from "acts-util-node";
 import { FileDownloadService } from "./FileDownloadService";
 import { CommandExecutor } from "./CommandExecutor";
-import { FileUploadService } from "./FileUploadService";
+import { FileUploadProcessor } from "./FileUploadProcessor";
 import { BlobVersionsController } from "../data-access/BlobVersionsController";
 import { FFProbe_MediaInfo, FFProbeService } from "./FFProbeService";
 import { BlobsController } from "../data-access/BlobsController";
 import { CONST_SERVICE_USER_FAKEID } from "../constants";
 import { ImageMetadataService } from "./ImageMetadataService";
+import { FileGeocodingService } from "./FileGeocodingService";
 
 @Injectable
 export class ThumbnailService
 {
     constructor(private fileDownloadService: FileDownloadService, private commandExecutor: CommandExecutor,
-        private fileUploadService: FileUploadService, private blobVersionsController: BlobVersionsController, private ffProbeService: FFProbeService,
-        private blobsController: BlobsController, private imageMetadataService: ImageMetadataService
+        private fileUploadService: FileUploadProcessor, private blobVersionsController: BlobVersionsController, private ffProbeService: FFProbeService,
+        private blobsController: BlobsController, private imageMetadataService: ImageMetadataService, private fileGeocodingService: FileGeocodingService
     )
     {
     }
@@ -44,9 +45,8 @@ export class ThumbnailService
         {
             tmpDir = await fs.promises.mkdtemp("/tmp/oos");
 
-            const blob = await this.fileDownloadService.DownloadBlob(blobId, CONST_SERVICE_USER_FAKEID);
             const inputPath = path.join(tmpDir, "__input");
-            await fs.promises.writeFile(inputPath, blob);
+            await this.fileDownloadService.DownloadBlobOntoLocalFileSystem(blobId, CONST_SERVICE_USER_FAKEID, inputPath);
 
             await this.Process(blobId, inputPath, mediaType);
         }
@@ -68,6 +68,8 @@ export class ThumbnailService
         {
             const info = await this.imageMetadataService.ExtractTags(mediaFilePath);
             await this.blobsController.WriteMetaData(blobId, "img", JSON.stringify(info));
+
+            await this.fileGeocodingService.TrySetGeoLocationOnAssociatedFiles(blobId);
         }
 
         if(!mediaType.startsWith("audio/") && (mediaInfo !== null))
@@ -78,7 +80,7 @@ export class ThumbnailService
                 const result = await this.fileUploadService.UploadBlobFromDisk(thumbPath);
 
                 const parsed = path.parse(thumbPath);
-                await this.blobVersionsController.AddVersion(result.blobId, parsed.name);
+                await this.blobVersionsController.AddVersion(blobId, result.blobId, parsed.name);
             }
         }
     }
@@ -162,13 +164,14 @@ export class ThumbnailService
         const segmentsCount = 3*3;
         const duration = parseFloat(mediaInfo.format.duration);
         const segments = this.SplitIntoSegmentsByCount(duration, segmentsCount);
+        const validSegments = segments.map(x => Math.round(x)).Values().Distinct(x => x).ToArray();
 
         const isWidthBigger = vidStream.width > vidStream.height;
         const scale = isWidthBigger ? "256:-1" : "-1:256";
 
         const imgThumbPaths = [];
         const digitCount = Math.ceil(duration).toString().length;
-        for (const segment of segments)
+        for (const segment of validSegments)
         {
             const thumbPath = await this.CreateImageThumbnail(mediaFilePath, scale, { seekPos: segment, digitCount });
             imgThumbPaths.push(thumbPath);
@@ -191,7 +194,7 @@ export class ThumbnailService
     private async CreateImageThumbnail(inputPath: string, scale: string, seek?: { seekPos: number, digitCount: number })
     {
         const dirPath = path.dirname(inputPath);
-        const outPath = path.join(dirPath, (seek === undefined) ? "thumb.jpg" : ("thumb_" + this.PadZeros(Math.round(seek.seekPos).toString(), seek.digitCount) + ".jpg"));
+        const outPath = path.join(dirPath, (seek === undefined) ? "thumb.jpg" : ("thumb_" + this.PadZeros(seek.seekPos.toString(), seek.digitCount) + ".jpg"));
         const seekParams = (seek === undefined) ? [] : [ "-ss", seek?.seekPos.toString()];
         await this.commandExecutor.Execute(["ffmpeg", ...seekParams, "-i", inputPath, "-vf", "scale=" + scale, "-frames:v", "1", outPath]);
 

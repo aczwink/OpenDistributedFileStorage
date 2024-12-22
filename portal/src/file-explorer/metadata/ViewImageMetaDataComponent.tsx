@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
-import { APIService } from "../../APIService";
 import { ImageTags } from "../../../dist/api";
 import { JSX_CreateElement, JSX_Fragment, Use, UseAPI, UseRouteParameter } from "acfrontend";
+import { APIService } from "../../services/APIService";
+import { GeoLocationMap } from "../../geolocation/GeoLocationMap";
 
 function InfoComponent(input: { containerId: number; fileId: number; tags: ImageTags; })
 {
@@ -25,19 +26,16 @@ function InfoComponent(input: { containerId: number; fileId: number; tags: Image
 
     if(t.geolocation !== undefined)
     {
-        const lat = t.geolocation.latitude.substring(0, t.geolocation.latitude.length - 2);
-        const lon = t.geolocation.longitude.substring(0, t.geolocation.longitude.length - 2);
+        const lat = t.geolocation.latitude;
+        const lon = t.geolocation.longitude;
 
         const points = [{
-            lat: parseFloat(lat),
-            lon: parseFloat(lon)
+            lat,
+            lon
         }];
-        const data = {
-            points,
-        };
         return <>
             Taken on: {t.geolocation.dateTime} <br />
-            <iframe src={"/leaflet.htm?data=" + encodeURIComponent(JSON.stringify(data))} style="width: 100%; height: 80vh" />;
+            <GeoLocationMap points={points} />
         </>;
     }
 

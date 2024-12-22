@@ -69,6 +69,20 @@ export class FilesController
         });
     }
 
+    public async DeleteFile(fileId: number)
+    {
+        const conn = await this.dbConnMgr.GetFreeConnection();
+
+        await conn.value.DeleteRows("files_revisions", "fileId = ?", fileId);
+
+        await conn.value.StartTransaction();
+        await conn.value.DeleteRows("files_deleted", "fileId = ?", fileId);
+        await conn.value.DeleteRows("files", "id = ?", fileId);
+        await conn.value.Commit();
+
+        conn.Close();
+    }
+
     public async FindIdByName(containerId: number, filePath: string)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
@@ -85,14 +99,18 @@ export class FilesController
     public async QueryDirectChildrenOf(containerId: number, dirPath: string)
     {
         const query = `
-        SELECT id, filePath, mediaType
-        FROM files
+        SELECT f.id, f.filePath, f.mediaType
+        FROM files f
+        LEFT JOIN files_deleted fd
+        ON fd.fileId = f.id
         WHERE
-            containerId = ?
+            fd.deletionTime IS NULL
             AND
-            filePath LIKE ?
+            f.containerId = ?
             AND
-            filePath NOT LIKE ?
+            f.filePath LIKE ?
+            AND
+            f.filePath NOT LIKE ?
         `;
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         return await conn.Select<FileOverviewData>(query, containerId, this.JoinPaths(dirPath, "%"), this.JoinPaths(dirPath, "%/%"));
@@ -117,6 +135,19 @@ export class FilesController
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         return await conn.SelectOne<FileRevision>("SELECT blobId, creationTimestamp FROM `files_revisions` WHERE fileId = ? ORDER BY creationTimestamp DESC LIMIT 1", fileId);
+    }
+
+    public async QueryFilesAssociatedWithBlob(blobId: number)
+    {
+        const query = `
+        SELECT fileId
+        FROM files_revisions
+        WHERE blobId = ?
+        GROUP BY fileId;
+        `;
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const rows = await conn.Select<{ fileId: number }>(query, blobId);
+        return rows.Values().Map(x => x.fileId);
     }
 
     public async QueryRevisions(fileId: number)

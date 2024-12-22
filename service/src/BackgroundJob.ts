@@ -16,6 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
+interface CollectGarbageJob
+{
+    type: "collect-garbage";
+}
+
 export type StreamingVersionType = "360p" | "480p";
 interface ComputeStreamingVersion
 {
@@ -47,4 +52,4 @@ interface ReplicationJob
     storageBlockId: number;
 }
 
-export type BackgroundJob = ComputeStreamingVersion | ComputeThumbs | FileUploadJob | ReplicationJob;
+export type BackgroundJob = CollectGarbageJob | ComputeStreamingVersion | ComputeThumbs | FileUploadJob | ReplicationJob;

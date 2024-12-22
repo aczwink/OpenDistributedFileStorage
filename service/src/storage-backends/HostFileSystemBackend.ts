@@ -38,6 +38,12 @@ export class HostFileSystemBackend implements StorageBackend
             await fs.promises.mkdir(fullPath);
     }
 
+    public async DeleteFile(filePath: string): Promise<void>
+    {
+        const fullPath = path.join(this.rootPath, filePath);
+        await fs.promises.unlink(fullPath);
+    }
+
     public async ReadFile(filePath: string): Promise<Buffer>
     {
         const fullPath = path.join(this.rootPath, filePath);

@@ -17,9 +17,11 @@
  * */
 
 import { AutoCompleteTextLineEdit, BootstrapIcon, FormField, JSX_CreateElement, LineEdit, PushButton, Router, Use, UseAPI, UseDeferredAPI, UseRouteParameter, UseState } from "acfrontend";
-import { APIService } from "../APIService";
 import { FileMetaDataDTO } from "../../dist/api";
 import { FileEventsService } from "../FileEventsService";
+import { APIService } from "../services/APIService";
+import { GeoLocationSelector } from "../geolocation/GeoLocationSelector";
+import { GeoLocationMap } from "../geolocation/GeoLocationMap";
 
 async function LoadTags(containerId: number, searchText: string)
 {
@@ -43,15 +45,30 @@ function FileEditor(input: { containerId: number; fileId: number; fileData: File
         state.tags[index] = newValue;
         state.tags = [...state.tags]; //inform view about change
     }
+    async function onLocationChanged(newValue: string)
+    {
+        const response = await Use(APIService).geocoding._any_.get(newValue);
+        if(response.statusCode !== 200)
+            throw new Error("TODO implement me");
+        const location = response.data;
+        state.locationPos = {
+            lat: parseFloat(location.latitude),
+            lon: parseFloat(location.longitude)
+        };
+        state.osmLocationId = newValue;
+    }
 
     const state = UseState({
         filePath: input.fileData.filePath,
+        osmLocationId: input.fileData.location?.osmId ?? null,
+        locationPos: (input.fileData.location === undefined) ? null : { lat: input.fileData.location.lat, lon: input.fileData.location.lon },
         tags: input.fileData.tags
     });
     const isValid = state.tags.find(x => x.trim().length === 0) === undefined;
 
     const apiState = UseDeferredAPI(
         () => Use(APIService).files._any_.put(input.fileId, {
+            osmLocationId: state.osmLocationId,
             filePath: state.filePath,
             tags: state.tags
         }),
@@ -67,6 +84,9 @@ function FileEditor(input: { containerId: number; fileId: number; fileData: File
         <FormField title="File path">
             <LineEdit link={state.links.filePath} />
         </FormField>
+        <h4>Location</h4>
+        <GeoLocationSelector locationId={state.osmLocationId} onValueChanged={onLocationChanged} />
+        {(state.locationPos === null) ? null : <GeoLocationMap points={[state.locationPos]} /> }
         <h4>Tags</h4>
         {state.tags.map( (x, i) => <div className="row">
             <div className="col">
