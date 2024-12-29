@@ -19,6 +19,12 @@
 import { Injectable } from "acts-util-node";
 import { DBConnectionsManager } from "./DBConnectionsManager";
 
+export interface ResidualBlock
+{
+    storageBlockId: number;
+    size: number;
+}
+
 @Injectable
 export class StorageBlocksController
 {
@@ -39,31 +45,10 @@ export class StorageBlocksController
     public async CreateBlock()
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        const result = await conn.InsertRow("storageblocks", { iv: "", authTag: "" });
+        const result = await conn.InsertRow("storageblocks", { size: 0, iv: "", authTag: "" });
         const storageBlockId = result.insertId;
 
         return storageBlockId;
-    }
-
-    public async CreateResidualBlock(leftSize: number)
-    {
-        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        const result = await conn.InsertRow("storageblocks", { iv: "", authTag: "" });
-        const storageBlockId = result.insertId;
-
-        await conn.InsertRow("storageblocks_residual", {
-            storageBlockId,
-            leftSize
-        });
-
-        return storageBlockId;
-    }
-
-    public async DeleteBlock(storageBlockId: number)
-    {
-        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        await conn.DeleteRows("storageblocks_residual", "storageBlockId = ?", storageBlockId);
-        await conn.DeleteRows("storageblocks", "id = ?", storageBlockId);
     }
 
     public async FindFastBackendIdThatHasBlock(storageBlockId: number)
@@ -83,18 +68,18 @@ export class StorageBlocksController
         return row?.storageBackendId as number | undefined;
     }
 
-    public async FindResidualBlock(size: number)
+    public async FreeBlock(storageBlockId: number)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        const row = await conn.SelectOne<{ storageBlockId: number; leftSize: number; }>("SELECT storageBlockId, leftSize FROM storageblocks_residual WHERE leftSize >= ? LIMIT 1", size);
-        return row;
+        await conn.DeleteRows("storageblocks_residual", "storageBlockId = ?", storageBlockId);
+        await conn.InsertRow("storageblocks_freed", { storageBlockId });
+        await conn.UpdateRows("storageblocks", { size: 0, iv: "", authTag: "" }, "id = ?", storageBlockId);
     }
 
-    public async IsResidualBlock(storageBlockId: number)
+    public async PutOnResidualList(storageBlockId: number)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        const row = await conn.SelectOne("SELECT TRUE FROM storageblocks_residual WHERE storageBlockId = ?", storageBlockId);
-        return row !== undefined;
+        await conn.InsertRow("storageblocks_residual", { storageBlockId });
     }
 
     public async QueryBlockLocations(storageBlockId: number)
@@ -117,14 +102,32 @@ export class StorageBlocksController
         };
     }
 
-    public async ReduceLeftSizeOfResidualBlock(storageBlockId: number, newLeftSize: number)
+    public async QueryResidualBlockCount()
     {
+        const query = `
+        SELECT COUNT(*) AS cnt
+        FROM storageblocks_residual
+        `;
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const row = await conn.SelectOne(query);
 
-        if(newLeftSize === 0)
-            await conn.DeleteRows("storageblocks_residual", "storageBlockId = ?", storageBlockId);
-        else
-            await conn.UpdateRows("storageblocks_residual", { leftSize: newLeftSize }, "storageBlockId = ?", storageBlockId);
+        if(row === undefined)
+            return 0;
+        return row.cnt as number;
+    }
+
+    public async QueryResidualBlocksOrderedBySizeDescending()
+    {
+        const query = `
+        SELECT sbr.storageBlockId, sb.size
+        FROM storageblocks_residual sbr
+        INNER JOIN storageblocks sb
+            ON sb.id = sbr.storageBlockId
+        ORDER BY sb.size DESC
+        `;
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const rows = await conn.Select<ResidualBlock>(query);
+        return rows;
     }
 
     public async RemoveBlockLocation(storageBlockId: number, storageBackendId: number)
@@ -133,19 +136,31 @@ export class StorageBlocksController
         await conn.DeleteRows("storagebackends_storageblocks", "storageBackendId = ? AND storageBlockId = ?", storageBackendId, storageBlockId);
     }
 
-    public async UpdateBlockLocation(storageBlockId: number, storageBackendId: number)
+    public async TryRemoveStorageBlockFromFreeList()
     {
+        const query = `
+        SELECT storageBlockId
+        FROM storageblocks_freed
+        LIMIT 1
+        `;
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        await conn.DeleteRows("storagebackends_storageblocks", "storageBlockId = ?", storageBlockId);
-        await conn.InsertRow("storagebackends_storageblocks", {
-            storageBackendId,
-            storageBlockId
-        });
+        const row = await conn.SelectOne(query);
+        if(row === undefined)
+            return null;
+        const storageBlockId = row.storageBlockId as number;
+
+        await conn.DeleteRows("storageblocks_freed", "storageBlockId = ?", storageBlockId);
+
+        return storageBlockId;
     }
 
-    public async UpdateEncryptionInfo(storageBlockId: number, iv: Buffer, authTag: Buffer)
+    public async UpdateStorageBlockInfo(storageBlockId: number, size: number, iv: Buffer, authTag: Buffer)
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        await conn.UpdateRows("storageblocks", { iv: iv.toString("hex"), authTag: authTag.toString("hex") }, "id = ?", storageBlockId);
+        await conn.UpdateRows("storageblocks", {
+            size,
+            iv: iv.toString("hex"),
+            authTag: authTag.toString("hex")
+        }, "id = ?", storageBlockId);
     }
 }

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-import { APIController, Auth, BadRequest, Body, BodyProp, Common, Forbidden, Get, NotFound, Ok, Path, Post, Put, Query, Request, Security } from "acts-util-apilib";
+import { APIController, Auth, BadRequest, Body, BodyProp, Common, Delete, Forbidden, Get, NotFound, Ok, Path, Post, Put, Query, Request, Security } from "acts-util-apilib";
 import { AccessToken, OIDC_API_SCHEME, SCOPE_FILES_WRITE } from "../api_security";
 import { ContainersController } from "../data-access/ContainersController";
 import { FileMetaData, FilesController } from "../data-access/FilesController";
@@ -79,6 +79,15 @@ class _api_
             return Forbidden("you don't have access to that container");
 
         return file;
+    }
+
+    @Delete()
+    @Security(OIDC_API_SCHEME, [SCOPE_FILES_WRITE])
+    public async SoftDeleteFile(
+        @Common file: FileMetaData
+    )
+    {
+        await this.filesController.SoftDeleteFile(file.id);
     }
 
     @Get()

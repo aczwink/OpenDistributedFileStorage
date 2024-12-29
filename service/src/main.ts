@@ -101,6 +101,9 @@ async function BootstrapServer()
             case "collect-garbage":
                 await GlobalInjector.Resolve(GarbageColletor).Execute();
                 break;
+            case "combine-residual-blocks":
+                await GlobalInjector.Resolve(StorageBlocksManager).CombineResidualBlocks();
+                break;
             case "compute-streaming-version":
                 await GlobalInjector.Resolve(StreamingVersionService).Compute(job.blobId, job.targetType);
                 break;

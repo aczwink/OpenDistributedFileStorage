@@ -73,6 +73,7 @@ export class FilesController
     {
         const conn = await this.dbConnMgr.GetFreeConnection();
 
+        await conn.value.DeleteRows("files_locations", "fileId = ?", fileId);
         await conn.value.DeleteRows("files_revisions", "fileId = ?", fileId);
 
         await conn.value.StartTransaction();
@@ -208,6 +209,18 @@ export class FilesController
 
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         return await conn.Select<FileOverviewData>(builder.CreateSQLQuery());
+    }
+
+    public async SoftDeleteFile(fileId: number)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+
+        await conn.InsertRow("files_deleted", {
+            fileId,
+            deletionTime: CreateDatabaseExpression({
+                type: "CurrentDateTime"
+            })
+        });
     }
 
     public async UpdatePath(fileId: number, filePath: string)

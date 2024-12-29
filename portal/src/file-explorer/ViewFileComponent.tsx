@@ -136,6 +136,7 @@ export class ViewFileComponent extends Component
             <div className="col-auto">
                 <a className="text-primary px-1" role="button" onclick={this.OnDownloadFile.bind(this)}><BootstrapIcon>download</BootstrapIcon></a>
                 {this.apiService.readOnly ? null : <Anchor className="px-1" route={"/" + this.containerId + "/" + this.fileId + "/edit"}><BootstrapIcon>pencil</BootstrapIcon></Anchor>}
+                {this.apiService.readOnly ? null : <a role="button" className="px-1 text-danger" onclick={this.OnDeleteFile.bind(this)}><BootstrapIcon>trash</BootstrapIcon></a>}
             </div>
         </div>;
     }
@@ -161,6 +162,14 @@ export class ViewFileComponent extends Component
     }
 
     //Event handlers
+    private async OnDeleteFile()
+    {
+        if(confirm("Are you sure that you want to move this file into the recycle bin?"))
+        {
+            await this.apiService.files._any_.delete(this.fileId);
+        }
+    }
+
     private async OnDownloadFile()
     {
         DownloadFileUsingProgressPopup(this.GetFileName(), progressTracker => this.apiService.files._any_.blob.get(this.fileId, { progressTracker }));

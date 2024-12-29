@@ -46,6 +46,6 @@ export class GarbageColletor
 
         const storageBlockIds = await this.garbageCollectionController.FindUnreferencedStorageBlocks();
         for (const storageBlockId of storageBlockIds)
-            await this.storageBlocksManager.RemoveUnreferencedStorageBlock(storageBlockId);
+            await this.storageBlocksManager.FreeUnreferencedStorageBlock(storageBlockId);
     }
 }

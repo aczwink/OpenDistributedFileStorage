@@ -18,7 +18,7 @@
 
 import { Injectable } from "acts-util-node";
 import { DBConnectionsManager } from "./DBConnectionsManager";
-import { CONST_BLOCKSIZE, StorageTier } from "../constants";
+import { StorageTier } from "../constants";
 
 interface StorageBackendProperties
 {
@@ -56,26 +56,17 @@ export class StorageBackendsController
 
     public async QueryUsedSize(storageBackendId: number)
     {
-        const fullBlocksQuery = `
-        SELECT COUNT(*) AS cnt
-        FROM storagebackends_storageblocks sbsb
-        LEFT JOIN storageblocks_residual sbr
-            ON sbr.storageBlockId = sbsb.storageBlockId
-        WHERE sbsb.storageBackendId = ? AND sbr.leftSize IS NULL;
-        `;
-        const residualQuery = `
-        SELECT SUM(? - sbr.leftSize) AS sum
-        FROM storagebackends_storageblocks sbsb
-        INNER JOIN storageblocks_residual sbr
-            ON sbr.storageBlockId = sbsb.storageBlockId
+        const query = `
+        SELECT SUM(sb.size) AS sum
+        FROM storageblocks sb
+        INNER JOIN storagebackends_storageblocks sbsb
+            ON sbsb.storageBlockId = sb.id
         WHERE sbsb.storageBackendId = ?;
         `;
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
-        const row1 = await conn.SelectOne(fullBlocksQuery, storageBackendId);
-        const row2 = await conn.SelectOne(residualQuery, CONST_BLOCKSIZE, storageBackendId);
+        const row = await conn.SelectOne(query, storageBackendId);
 
-        const sumSize = (row2!.sum === null) ? 0 : parseInt(row2!.sum);
-
-        return parseInt(row1!.cnt) * CONST_BLOCKSIZE + sumSize;
+        const sumSize = (row!.sum === null) ? 0 : parseInt(row!.sum);
+        return sumSize;
     }
 }

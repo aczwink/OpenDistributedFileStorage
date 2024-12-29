@@ -90,6 +90,8 @@ export class BlobsController
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         await conn.DeleteRows("blobs_blocks", "blobId = ?", blobId);
+        await conn.DeleteRows("blobs_metadata", "blobId = ?", blobId);
+        await conn.DeleteRows("blobs_versions", "blobId = ?", blobId);
         await conn.DeleteRows("blobs", "id = ?", blobId);
     }
 
@@ -112,6 +114,18 @@ export class BlobsController
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         const row = await conn.SelectOne<BlockBlob>("SELECT size, sha256sum FROM blobblocks WHERE id = ?", id);
         return row;
+    }
+
+    public async QueryBlobBlocksInStorageBlock(storageBlockId: number)
+    {
+        const query = `
+        SELECT bbsb.blobBlockId, bbsb.storageBlockOffset
+        FROM blobblocks_storageblocks bbsb
+        WHERE bbsb.storageBlockId = ?
+        `;
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const rows = await conn.Select<{ blobBlockId: number; storageBlockOffset: number; }>(query, storageBlockId);
+        return rows;
     }
 
     public async QueryBlobStoredSize(blobId: number)
@@ -174,6 +188,12 @@ export class BlobsController
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         const row = await conn.SelectOne("SELECT metadata FROM blobs_metadata WHERE blobId = ? AND metadataKey = ?", blobId, key);
         return row?.metadata as string | undefined;
+    }
+
+    public async RemoveReferencesToStorageBlockId(storageBlockId: number)
+    {
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        await conn.DeleteRows("blobblocks_storageblocks", "storageBlockId = ?", storageBlockId);
     }
 
     public async WriteMetaData(blobId: number, key: string, data: string)

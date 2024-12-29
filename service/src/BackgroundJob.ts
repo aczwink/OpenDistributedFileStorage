@@ -29,6 +29,11 @@ interface ComputeStreamingVersion
     targetType: StreamingVersionType;
 }
 
+interface CombineResidualStorageBlocks
+{
+    type: "combine-residual-blocks";
+}
+
 interface ComputeThumbs
 {
     type: "compute-thumbs";
@@ -52,4 +57,4 @@ interface ReplicationJob
     storageBlockId: number;
 }
 
-export type BackgroundJob = CollectGarbageJob | ComputeStreamingVersion | ComputeThumbs | FileUploadJob | ReplicationJob;
+export type BackgroundJob = CollectGarbageJob | CombineResidualStorageBlocks | ComputeStreamingVersion | ComputeThumbs | FileUploadJob | ReplicationJob;

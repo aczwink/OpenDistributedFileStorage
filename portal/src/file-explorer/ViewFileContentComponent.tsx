@@ -20,11 +20,18 @@ import { JSX_CreateElement, Use, UseAPI, UseRouteParameter } from "acfrontend";
 import { FileMetaDataDTO } from "../../dist/api";
 import { VideoStreamComponent } from "./content/VideoStreamComponent";
 import { APIService } from "../services/APIService";
+import { PlainTextComponent } from "./content/PlainTextComponent";
 
 function FileContentShower(input: { metadata: FileMetaDataDTO })
 {
     if(input.metadata.mediaType.startsWith("video/"))
         return <VideoStreamComponent />;
+
+    switch(input.metadata.mediaType)
+    {
+        case "text/plain":
+            return <PlainTextComponent fileId={input.metadata.id} />;
+    }
 
     return "Content can't be displayed";
 }

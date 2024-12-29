@@ -83,7 +83,9 @@ export class GarbageCollectionController
         FROM storageblocks sb
         LEFT JOIN blobblocks_storageblocks bbsb
             ON sb.id = bbsb.storageBlockId
-        WHERE bbsb.blobBlockId IS NULL
+        LEFT JOIN storageblocks_freed sbf
+            ON sb.id = sbf.storageBlockId
+        WHERE (bbsb.blobBlockId IS NULL) AND (sbf.storageBlockId IS NULL)
         `;
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         const rows = await conn.Select<{ id: number }>(query);

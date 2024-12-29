@@ -274,9 +274,24 @@ DROP TABLE IF EXISTS `storageblocks`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `storageblocks` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `size` int(10) unsigned NOT NULL,
   `iv` char(24) NOT NULL,
   `authTag` char(32) NOT NULL,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `storageblocks_freed`
+--
+
+DROP TABLE IF EXISTS `storageblocks_freed`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `storageblocks_freed` (
+  `storageBlockId` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`storageBlockId`),
+  CONSTRAINT `storageblocks_freed_storageBlockId` FOREIGN KEY (`storageBlockId`) REFERENCES `storageblocks` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -289,7 +304,6 @@ DROP TABLE IF EXISTS `storageblocks_residual`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `storageblocks_residual` (
   `storageBlockId` int(10) unsigned NOT NULL,
-  `leftSize` int(10) unsigned NOT NULL,
   PRIMARY KEY (`storageBlockId`),
   CONSTRAINT `storageblocks_residual_storageBlockId` FOREIGN KEY (`storageBlockId`) REFERENCES `storageblocks` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -322,4 +336,4 @@ CREATE TABLE `tags` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-12-22 22:16:04
+-- Dump completed on 2024-12-30  0:20:31
