@@ -1,6 +1,6 @@
 /**
  * OpenDistributedFileStorage
- * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
+ * Copyright (C) 2024-2025 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -82,7 +82,17 @@ export class StorageBlocksManager
 
         const replicationBackends = this.storageBackendsManager.FindReplicationBackends(storageBackendIds).ToArray();
         if(replicationBackends.length > 0)
-        {            
+        {
+            if(storageBackendIds.length === 0)
+            {
+                if(await this.storageBlocksController.IsBlockOnFreeList(storageBlockId))
+                {
+                    //before it could be replicated it actually got merged. nothing left to be done here
+                    return;
+                }
+                throw new Error("This situation should never happen!!!");
+            }
+
             const encryptedBlock = await this.DownloadEncryptedStorageBlock(storageBlockId);
             for (const replicationBackend of replicationBackends)
             {

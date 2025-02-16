@@ -1,6 +1,6 @@
 /**
  * OpenDistributedFileStorage
- * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
+ * Copyright (C) 2024-2025 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -74,6 +74,20 @@ export class StorageBlocksController
         await conn.DeleteRows("storageblocks_residual", "storageBlockId = ?", storageBlockId);
         await conn.InsertRow("storageblocks_freed", { storageBlockId });
         await conn.UpdateRows("storageblocks", { size: 0, iv: "", authTag: "" }, "id = ?", storageBlockId);
+    }
+
+    public async IsBlockOnFreeList(storageBlockId: number)
+    {
+        const query = `
+        SELECT TRUE
+        FROM storageblocks_freed
+        WHERE storageBlockId = ?
+        `;
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        const row = await conn.SelectOne(query, storageBlockId);
+        if(row === undefined)
+            return false;
+        return true;
     }
 
     public async PutOnResidualList(storageBlockId: number)

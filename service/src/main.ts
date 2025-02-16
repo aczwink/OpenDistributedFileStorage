@@ -1,6 +1,6 @@
 /**
  * OpenDistributedFileStorage
- * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
+ * Copyright (C) 2024-2025 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,13 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * */
 import "dotenv/config";
-import fs from "fs";
 import http from "http";
 import { AbsURL, OpenAPI } from "acts-util-core";
 import { Factory, GlobalInjector, HTTP } from "acts-util-node";
 import { APIRegistry } from "acts-util-apilib";
 import { DBConnectionsManager } from "./data-access/DBConnectionsManager";
-import { CONFIG_AUDIENCE, CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT, CONFIG_ROOTDIR, CONFIG_UPLOADDIR } from "./env";
+import { CONFIG_AUDIENCE, CONFIG_OIDP_ENDPOINT, CONFIG_ORIGIN, CONFIG_PORT, CONFIG_UPLOADDIR } from "./env";
 import { StorageBackendsManager } from "./services/StorageBackendsManager";
 import { MessagingService } from "./services/MessagingService";
 import { JobOrchestrationService } from "./services/JobOrchestrationService";
@@ -33,8 +32,6 @@ import { AccessCounterService } from "./services/AccessCounterService";
 import { StorageBlocksManager } from "./services/StorageBlocksManager";
 import { FileUploadProcessor } from "./services/FileUploadProcessor";
 import { GarbageColletor } from "./services/GarbageColletor";
-
-const crashDetectionPath = CONFIG_ROOTDIR + "/crash_check";
 
 async function DownloadPublicKey()
 {
@@ -137,26 +134,18 @@ async function BootstrapServer()
         console.log("Shutting server down...");
         GlobalInjector.Resolve(DBConnectionsManager).Close();
         GlobalInjector.Resolve(MessagingService).Close();
-        fs.unlinkSync(crashDetectionPath);
         server.close();
     });
 }
 
 function BootstrapService()
 {
-    if(fs.existsSync(crashDetectionPath))
-    {
-        console.log("Service did crash :S");
-        process.exit(1);
-        return;
-    }
     process.on("uncaughtException", (error, origin) => {
         console.log("Unhandled exception: ", error, origin);
     });
     process.on("unhandledRejection", (reason, promise) => {
         console.log("Unhandled rejection: ", reason, promise);
     });
-    fs.writeFileSync(crashDetectionPath, "");
 
     BootstrapServer();
 }
