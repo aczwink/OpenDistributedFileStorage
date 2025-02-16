@@ -1,6 +1,6 @@
 /**
  * OpenDistributedFileStorage
- * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
+ * Copyright (C) 2024-2025 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -71,11 +71,18 @@ export class FFProbeService
 
     public ExtractVideoStream(mediaInfo: FFProbe_MediaInfo)
     {
-        const streams = mediaInfo.streams.filter(x => x.codec_type === "video");
-        if(streams.length != 1)
-            throw new Error("TODO: implement me");
+        const streams = mediaInfo.streams.filter(x => x.codec_type === "video") as FFProbe_VideoStreamInfo[];
+        if(streams.length === 0)
+            throw new Error("TODO: implement me1");
+        if(streams.length > 1)
+        {
+            const withoutImages = streams.filter(x => x.codec_name !== "png");
+            if(withoutImages.length === 1)
+                return withoutImages[0];
+            throw new Error("TODO: implement me2");
+        }
         
-        return streams[0] as FFProbe_VideoStreamInfo;
+        return streams[0];
     }
 
     public IsStreamable(mediaType: string, mediaInfo: FFProbe_MediaInfo)
