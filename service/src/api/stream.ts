@@ -1,6 +1,6 @@
 /**
  * OpenDistributedFileStorage
- * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
+ * Copyright (C) 2024-2025 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -46,6 +46,7 @@ class _api_
         {
             const result = await this.fileDownloadService.DownloadBlob(blobId, userId);
             return Ok(result.stream, {
+                "Cache-Control": "max-age=31536000, immutable",
                 "Content-Length": result.size,
             });
         }
@@ -58,6 +59,7 @@ class _api_
         const slice = await this.fileDownloadService.DownloadBlobSlice(blobId, parsed.start, parsed.length);
         return PartialContent(slice, {
             "Accept-Ranges": "bytes",
+            "Cache-Control": "max-age=31536000, immutable",
             "Content-Range": `bytes ${parsed.start}-${parsed.end}/${totalSize}`,
             "Content-Length": slice.byteLength,
             "Content-Type": {
