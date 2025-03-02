@@ -1,6 +1,6 @@
 /**
  * OpenDistributedFileStorage
- * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
+ * Copyright (C) 2024-2025 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,6 +24,14 @@ export interface FileOverviewData
     id: number;
     filePath: string;
     mediaType: string;
+}
+
+interface DeletedFileOverviewData
+{
+    id: number;
+    filePath: string;
+    mediaType: string;
+    deletionTime: DateTime;
 }
 
 export interface FileMetaData extends FileOverviewData
@@ -95,6 +103,18 @@ export class FilesController
     {
         const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
         return await conn.SelectOne<FileMetaData>("SELECT * FROM files WHERE id = ?", fileId);
+    }
+
+    public async QeuryDeletedFiles(containerId: number)
+    {
+        const query = `
+        SELECT f.id, f.filePath, f.mediaType, fd.deletionTime
+        FROM files f
+        INNER JOIN files_deleted fd
+            ON f.id = fd.fileId
+        `;
+        const conn = await this.dbConnMgr.CreateAnyConnectionQueryExecutor();
+        return await conn.Select<DeletedFileOverviewData>(query, containerId);
     }
 
     public async QueryDirectChildrenOf(containerId: number, dirPath: string)

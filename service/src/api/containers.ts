@@ -1,6 +1,6 @@
 /**
  * OpenDistributedFileStorage
- * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
+ * Copyright (C) 2024-2025 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -91,6 +91,14 @@ class _api2_
     )
     {
         return this.tagsController.QueryAllLocations(containerId);
+    }
+
+    @Get("recyclebin")
+    public async RequestDeletedFiles(
+        @Path containerId: number,
+    )
+    {
+        return await this.filesController.QeuryDeletedFiles(containerId);
     }
 
     @Get("search")

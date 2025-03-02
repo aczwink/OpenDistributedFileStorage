@@ -1,6 +1,6 @@
 /**
  * OpenDistributedFileStorage
- * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
+ * Copyright (C) 2024-2025 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,7 +33,7 @@ export class RootComponent extends Component
         return <>
             <Navigation>
                 <ul className="nav nav-pills ms-auto">
-                    <li>{this.RenderConditional()}</li>
+                    {this.RenderConditional()}
                     <NavItem route="/settings"><BootstrapIcon>gear-wide-connected</BootstrapIcon></NavItem>
                     <li>
                         <a className="nav-link text-danger"><BootstrapIcon>box-arrow-right</BootstrapIcon></a>
@@ -52,15 +52,26 @@ export class RootComponent extends Component
         if(!this.apiService.readOnly)
             return null;
         const icon = this.apiService.readOnly ? "lock-fill" : "unlock-fill";
-        return <a className="nav-link" role="button" onclick={this.OnWantEditMode.bind(this)}><BootstrapIcon>{icon}</BootstrapIcon></a>;
+        return <li><a className="nav-link" role="button" onclick={this.OnWantEditMode.bind(this)}><BootstrapIcon>{icon}</BootstrapIcon></a></li>;
     }
 
     private RenderConditional()
     {
         if(this.router.state.Get().ToUrl().path.startsWith("/settings"))
-            return <NavItem route="/"><BootstrapIcon>house</BootstrapIcon></NavItem>;
+            return <li><NavItem route="/"><BootstrapIcon>house</BootstrapIcon></NavItem></li>;
         
-        return this.RenderEditCheck();
+        return <>
+            {this.RenderRecycleBin()}
+            {this.RenderEditCheck()}
+        </>;
+    }
+
+    private RenderRecycleBin()
+    {
+        const containerId = this.router.state.Get().routeParams.containerId;
+        if(containerId === undefined)
+            return null;
+        return <li><NavItem route={"/" + containerId + "/recyclebin"}><BootstrapIcon>trash</BootstrapIcon></NavItem></li>;
     }
 
     //Event handlers

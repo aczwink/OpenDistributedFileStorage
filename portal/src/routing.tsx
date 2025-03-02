@@ -1,6 +1,6 @@
 /**
  * OpenDistributedFileStorage
- * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
+ * Copyright (C) 2024-2025 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -37,6 +37,7 @@ import { EditAVMetaDataComponent } from "./file-explorer/metadata/EditAVMetaData
 import { ViewImageMetaDataComponent } from "./file-explorer/metadata/ViewImageMetaDataComponent";
 import { LargeBlobsReport } from "./reporting/LargeBlobsReport";
 import { ViewMapsComponent } from "./geolocation/ViewMapsComponent";
+import { ViewRecycleBinComponent } from "./containers/ViewRecycleBinComponent";
 
 const writeGuard = new OAuth2Guard({ config: CONFIG_OIDC, scopes: [SCOPE_FILES_WRITE] });
 
@@ -54,6 +55,7 @@ const fileRoutes: Routes = [
 
 const containerRoutes: Routes = [
     { path: "maps", component: <ViewMapsComponent /> },
+    { path: "recyclebin", component: <ViewRecycleBinComponent /> },
     { path: "{fileId}", component: <ViewFileComponent />, children: fileRoutes, },
     { path: "", component: <FileExplorerComponent /> }
 ];
