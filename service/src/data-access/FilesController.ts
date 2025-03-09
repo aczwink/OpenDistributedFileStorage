@@ -184,6 +184,19 @@ export class FilesController
 
         const filesTable = builder.SetPrimaryTable("files");
 
+        const filesDeletedTable = builder.AddJoin({
+            type: "LEFT",
+            tableName: "files_deleted",
+            conditions: [
+                {
+                    column: "fileId",
+                    operator: "=",
+                    joinTable: filesTable,
+                    joinTableColumn: "id"
+                }
+            ]
+        });
+
         builder.AddCondition({
             combination: "AND",
             conditions: [
@@ -207,6 +220,11 @@ export class FilesController
                     operator: "LIKE",
                     constant: "%" + mediaTypeFilter + "%"
                 },
+                {
+                    operand: { table: filesDeletedTable, column: "deletionTime" },
+                    operator: "IS",
+                    constant: null
+                }
             ]
         });
         builder.SetColumns([
