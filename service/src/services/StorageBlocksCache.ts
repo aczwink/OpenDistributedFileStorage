@@ -1,6 +1,6 @@
 /**
  * OpenDistributedFileStorage
- * Copyright (C) 2024 Amir Czwink (amir130@hotmail.de)
+ * Copyright (C) 2024-2025 Amir Czwink (amir130@hotmail.de)
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -38,6 +38,12 @@ export class StorageBlocksCache
         this.decryptedStorageBlocks = {};
     }
 
+    //Properties
+    public get cachedBlocksCount()
+    {
+        return ObjectExtensions.OwnKeys(this.decryptedStorageBlocks).Count();
+    }
+
     //Public methods
     public AddToCache(storageBlockId: number, decrypted: Buffer)
     {
@@ -64,7 +70,7 @@ export class StorageBlocksCache
     //Private methods
     private PruneCacheIfFull()
     {
-        const pruneCount = ObjectExtensions.OwnKeys(this.decryptedStorageBlocks).Count() - CONFIG_MAX_NUMBER_OF_CACHED_BLOCKS;
+        const pruneCount = this.cachedBlocksCount - CONFIG_MAX_NUMBER_OF_CACHED_BLOCKS;
         if(pruneCount <= 0)
             return;
         const toPrune = ObjectExtensions.Entries(this.decryptedStorageBlocks).OrderBy(kv => kv.value!.lastAccess).Map(kv => kv.key).Take(pruneCount);

@@ -24,6 +24,7 @@ import { StorageBackendsManager } from "./StorageBackendsManager";
 import { StorageBlocksCache } from "./StorageBlocksCache";
 import { JobOrchestrationService } from "./JobOrchestrationService";
 import { BlobsController } from "../data-access/BlobsController";
+import { NumberDictionary } from "acts-util-core";
 
 @Injectable
 export class StorageBlocksManager
@@ -33,6 +34,7 @@ export class StorageBlocksManager
         private jobOrchestrationService: JobOrchestrationService, private blobsController: BlobsController
     )
     {
+        this.inFlightRequests = {};
         this.storageBlockAcquirementLock = new Lock;
     }
 
@@ -60,12 +62,17 @@ export class StorageBlocksManager
         if(cached !== undefined)
             return cached;
 
-        const read = await this.DownloadEncryptedStorageBlock(storageBlockId);
-        const encryptionInfo = await this.storageBlocksController.QueryEncryptionInfo(storageBlockId);
-        const decrypted = await this.storageEncryptionManager.Decrypt(this.GetPartitionNumber(storageBlockId), read, encryptionInfo!.iv, encryptionInfo!.authTag);
+        const inFlightRequest = this.inFlightRequests[storageBlockId];
+        if(inFlightRequest !== undefined)
+            return inFlightRequest;
 
-        this.storageBlocksCache.AddToCache(storageBlockId, decrypted);
-        return decrypted;
+        const promise = this.DownloadAndDecryptStorageBlock(storageBlockId);
+        this.inFlightRequests[storageBlockId] = promise;
+
+        const result = await promise;
+        this.inFlightRequests[storageBlockId] = undefined;
+
+        return result;
     }
 
     public async FreeUnreferencedStorageBlock(storageBlockId: number)
@@ -169,6 +176,16 @@ export class StorageBlocksManager
         });
     }
 
+    private async DownloadAndDecryptStorageBlock(storageBlockId: number)
+    {
+        const read = await this.DownloadEncryptedStorageBlock(storageBlockId);
+        const encryptionInfo = await this.storageBlocksController.QueryEncryptionInfo(storageBlockId);
+        const decrypted = await this.storageEncryptionManager.Decrypt(this.GetPartitionNumber(storageBlockId), read, encryptionInfo!.iv, encryptionInfo!.authTag);
+
+        this.storageBlocksCache.AddToCache(storageBlockId, decrypted);
+        return decrypted;
+    }
+
     private async DownloadEncryptedStorageBlock(storageBlockId: number)
     {
         const backend = await this.storageBackendsManager.FindFastestBackendForReading(storageBlockId);
@@ -264,5 +281,6 @@ export class StorageBlocksManager
     }
 
     //State
+    private inFlightRequests: NumberDictionary<Promise<Buffer>>;
     private storageBlockAcquirementLock: Lock;
 }

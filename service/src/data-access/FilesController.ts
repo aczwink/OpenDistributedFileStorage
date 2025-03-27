@@ -83,6 +83,7 @@ export class FilesController
 
         await conn.value.DeleteRows("files_locations", "fileId = ?", fileId);
         await conn.value.DeleteRows("files_revisions", "fileId = ?", fileId);
+        await conn.value.DeleteRows("files_tags", "fileId = ?", fileId);
 
         await conn.value.StartTransaction();
         await conn.value.DeleteRows("files_deleted", "fileId = ?", fileId);
